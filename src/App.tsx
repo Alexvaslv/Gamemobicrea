@@ -689,6 +689,7 @@ export default function App() {
   const [tempUsername, setTempUsername] = useState("");
   const [tempGender, setTempGender] = useState<"male" | "female">("male");
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [activeDialogue, setActiveDialogue] = useState<{name: string, text: string, options: {text: string, action: () => void}[]} | null>(null);
   const [regUsername, setRegUsername] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -5197,7 +5198,29 @@ export default function App() {
                 return (
                   <button 
                     key={uid}
-                    onClick={() => viewPlayerProfile(uid)}
+                    onClick={() => {
+                      if (uid.startsWith("bot_")) {
+                        const bot = BOTS.find(b => b.userId === uid);
+                        if (bot) {
+                          setActiveDialogue({
+                            name: bot.playerName,
+                            text: "Привет, путник! Что тебя привело ко мне?",
+                            options: [
+                              { text: "Расскажи что-нибудь интересное", action: () => {
+                                  setActiveDialogue({
+                                    name: bot.playerName,
+                                    text: "Говорят, в лесу видели что-то странное... Будь осторожен.",
+                                    options: [{ text: "Спасибо за совет", action: () => setActiveDialogue(null) }]
+                                  });
+                              }},
+                              { text: "Пока", action: () => setActiveDialogue(null) }
+                            ]
+                          });
+                        }
+                      } else {
+                        viewPlayerProfile(uid);
+                      }
+                    }}
                     className="w-full glass-card p-3 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
@@ -6710,6 +6733,26 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {activeDialogue && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="parchment p-6 w-full max-w-sm space-y-4">
+              <h2 className="text-xl font-bold text-zinc-950 font-display border-b-2 border-zinc-900/20 pb-2">{activeDialogue.name}</h2>
+              <p className="text-zinc-800 text-sm leading-relaxed">{activeDialogue.text}</p>
+              <div className="space-y-2">
+                {activeDialogue.options.map((option, i) => (
+                  <button 
+                    key={i}
+                    onClick={option.action}
+                    className="w-full py-2 bg-zinc-900/10 border-2 border-zinc-900/20 text-zinc-950 text-sm hover:bg-zinc-900/20 transition-all font-bold"
+                  >
+                    {option.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
   );
 }
