@@ -1,0 +1,240 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information stored in Firestore",
+      "type": "object",
+      "properties": {
+        "playerName": { "type": "string", "description": "User nickname" },
+        "realName": { "type": "string", "description": "User real name" },
+        "country": { "type": "string", "description": "User country" },
+        "birthday": { "type": "string", "description": "User birthday (DD.MM.YYYY)" },
+        "age": { "type": "integer", "description": "User age" },
+        "status": { "type": "string", "description": "Character status message" },
+        "isNameHidden": { "type": "boolean", "description": "Whether to hide real name" },
+        "isCountryHidden": { "type": "boolean", "description": "Whether to hide country" },
+        "isAgeHidden": { "type": "boolean", "description": "Whether to hide age" },
+        "isBirthdayHidden": { "type": "boolean", "description": "Whether to hide birthday" },
+        "password": { "type": "string", "description": "User password (hashed or plain)" },
+        "email": { "type": "string", "format": "email", "description": "User email" },
+        "race": { "type": "string", "description": "Character race" },
+        "gender": { "type": "string", "description": "Character gender" },
+        "avatarUrl": { "type": "string", "description": "Avatar URL" },
+        "level": { "type": "integer", "description": "Character level" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "strength": { "type": "integer" },
+            "agility": { "type": "integer" },
+            "intelligence": { "type": "integer" },
+            "stamina": { "type": "integer" },
+            "intuition": { "type": "integer" },
+            "endurance": { "type": "integer" },
+            "wisdom": { "type": "integer" }
+          }
+        },
+        "silver": { "type": "integer" },
+        "iron": { "type": "integer" },
+        "gold": { "type": "integer" },
+        "diamonds": { "type": "integer" },
+        "xp": { "type": "integer" },
+        "inventory": { "type": "array", "items": { "type": "object" } },
+        "equippedItems": { "type": "object" },
+        "messages": { "type": "array", "items": { "type": "object" } },
+        "friends": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nickname": { "type": "string" },
+              "status": { "type": "string", "enum": ["online", "recent", "offline"] }
+            }
+          }
+        },
+        "clanId": { "type": "string", "description": "ID or name of the clan the user belongs to" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+      },
+      "required": ["playerName", "password", "email", "race", "gender", "createdAt"]
+    },
+    "Clan": {
+      "title": "Clan",
+      "description": "Clan information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "level": { "type": "integer" },
+        "members": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "uid": { "type": "string" },
+              "nickname": { "type": "string" },
+              "role": { "type": "string", "enum": ["leader", "officer", "member"] }
+            }
+          } 
+        },
+        "description": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "leader": { "type": "string" },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "minLevel": { "type": "integer" },
+            "isPrivate": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["name", "level", "members", "leader"]
+    },
+    "GlobalChatMessage": {
+      "title": "GlobalChatMessage",
+      "description": "A message in the global chat",
+      "type": "object",
+      "properties": {
+        "sender": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "avatarUrl": { "type": "string" }
+      },
+      "required": ["sender", "text", "timestamp"]
+    },
+    "NewsItem": {
+      "title": "NewsItem",
+      "description": "A news article or announcement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" }
+      },
+      "required": ["title", "content", "date"]
+    },
+    "ForumPost": {
+      "title": "ForumPost",
+      "description": "A post on the game forum",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "replies": { "type": "integer" }
+      },
+      "required": ["title", "author", "content", "timestamp"]
+    },
+    "Matchmaking": {
+      "title": "Matchmaking",
+      "description": "Players waiting for a match",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string" },
+        "playerName": { "type": "string" },
+        "level": { "type": "integer" },
+        "timestamp": { "type": "integer" },
+        "status": { "type": "string", "enum": ["waiting", "matched"] },
+        "opponentId": { "type": "string" },
+        "battleId": { "type": "string" }
+      },
+      "required": ["playerId", "playerName", "level", "timestamp", "status"]
+    },
+    "AuctionItem": {
+      "title": "AuctionItem",
+      "description": "An item listed for auction",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "item": { "$ref": "Item" },
+        "startPrice": { "type": "integer" },
+        "currentBid": { "type": "integer" },
+        "highestBidderId": { "type": "string" },
+        "highestBidderName": { "type": "string" },
+        "endTime": { "type": "integer" },
+        "status": { "type": "string", "enum": ["active", "sold", "expired"] }
+      },
+      "required": ["sellerId", "item", "startPrice", "endTime", "status"]
+    },
+    "Wedding": {
+      "title": "Wedding",
+      "description": "A marriage between two players",
+      "type": "object",
+      "properties": {
+        "spouse1Id": { "type": "string" },
+        "spouse1Name": { "type": "string" },
+        "spouse2Id": { "type": "string" },
+        "spouse2Name": { "type": "string" },
+        "weddingDate": { "type": "integer" },
+        "location": { "type": "string" }
+      },
+      "required": ["spouse1Id", "spouse2Id", "weddingDate"]
+    },
+    "ClanBuilding": {
+      "title": "ClanBuilding",
+      "description": "A building within a clan",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "level": { "type": "integer" },
+        "bonus": { "type": "object" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{nickname}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profile documents indexed by nickname"
+    },
+    "/clans/{clanName}": {
+      "schema": { "$ref": "Clan" },
+      "description": "Clan documents indexed by clan name"
+    },
+    "/usernames/{nickname}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "uid": { "type": "string", "description": "The user ID associated with this nickname" }
+        },
+        "required": ["uid"]
+      },
+      "description": "Mapping of nicknames to user IDs to ensure uniqueness"
+    },
+    "/global_chat/{messageId}": {
+      "schema": { "$ref": "GlobalChatMessage" },
+      "description": "Global chat messages"
+    },
+    "/news/{newsId}": {
+      "schema": { "$ref": "NewsItem" },
+      "description": "News and announcements"
+    },
+    "/forum_posts/{postId}": {
+      "schema": { "$ref": "ForumPost" },
+      "description": "Forum posts and topics"
+    },
+    "/matchmaking_1v1/{matchId}": {
+      "schema": { "$ref": "Matchmaking" },
+      "description": "1v1 Matchmaking queue"
+    },
+    "/battles_1v1/{battleId}": {
+      "schema": { "$ref": "Battle" },
+      "description": "1v1 battle sessions"
+    },
+    "/battles_squad/{battleId}": {
+      "schema": { "type": "object" },
+      "description": "Squad battle sessions"
+    },
+    "/battles_royale/{battleId}": {
+      "schema": { "type": "object" },
+      "description": "Battle Royale sessions"
+    },
+    "/auction/{itemId}": {
+      "schema": { "$ref": "AuctionItem" },
+      "description": "Auction listings"
+    },
+    "/weddings/{weddingId}": {
+      "schema": { "$ref": "Wedding" },
+      "description": "Player marriages"
+    }
+  }
+}

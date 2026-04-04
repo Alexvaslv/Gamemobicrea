@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-4 bg-lime-400 text-lime-950 font-bold uppercase tracking-wider rounded-full hover:bg-lime-300 transition-all duration-300 active:scale-95 shadow-[0_0_20px_rgba(163,230,53,0.3)];
+  }
+  .btn-secondary {
+    @apply px-6 py-4 bg-zinc-800/80 border border-white/10 text-zinc-100 font-semibold rounded-full hover:bg-zinc-700 transition-all duration-300 active:scale-95 backdrop-blur-md;
+  }
+  .glass-card {
+    @apply bg-zinc-900/60 border border-white/5 backdrop-blur-xl rounded-3xl overflow-hidden;
+  }
+  .glass-nav {
+    @apply bg-zinc-950/80 border-t border-white/5 backdrop-blur-xl;
+  }
+}
+
+@theme {
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #09090B; /* zinc-950 */
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(163, 230, 53, 0.05), transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.05), transparent 50%);
+  background-attachment: fixed;
+  color: #FAFAFA; /* zinc-50 */
+  font-family: "Inter", sans-serif;
+}
+
+/* Custom Scrollbar for sleek look */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.character {
+  width: 100%;
+  aspect-ratio: 1 / 1.2;
+  max-height: 600px;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-rows: 1fr 2fr 1fr;
+  gap: 10px;
+}
+
+/* АВАТАР — РАСТЯГИВАЕМ ПОЛНОСТЬЮ */
+.avatar {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #18181B;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* КАРТИНКА ВНУТРИ */
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* важно */
+  display: block;
+}
