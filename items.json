@@ -1,0 +1,804 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Железный меч",
+      "type": "weapon",
+      "rarity": "gray",
+      "effect": "+5 к атаке",
+      "icon": "iron_sword.png"
+    },
+    {
+      "id": 2,
+      "name": "Стальной меч",
+      "type": "weapon",
+      "rarity": "gray",
+      "effect": "+8 к атаке",
+      "icon": "steel_sword.png"
+    },
+    {
+      "id": 3,
+      "name": "Короткий кинжал",
+      "type": "weapon",
+      "rarity": "gray",
+      "effect": "+3 к атаке",
+      "icon": "dagger.png"
+    },
+    {
+      "id": 4,
+      "name": "Боевой топор",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+10 к атаке",
+      "icon": "battle_axe.png"
+    },
+    {
+      "id": 5,
+      "name": "Копьё",
+      "type": "weapon",
+      "rarity": "gray",
+      "effect": "+6 к атаке",
+      "icon": "spear.png"
+    },
+    {
+      "id": 6,
+      "name": "Ледяной меч",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+12 к атаке, морозный урон",
+      "icon": "ice_sword.png"
+    },
+    {
+      "id": 7,
+      "name": "Огненный топор",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+15 к атаке, огненный урон",
+      "icon": "fire_axe.png"
+    },
+    {
+      "id": 8,
+      "name": "Ядовитый кинжал",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+5 к атаке, яд",
+      "icon": "poison_dagger.png"
+    },
+    {
+      "id": 9,
+      "name": "Молот войны",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+18 к атаке",
+      "icon": "war_hammer.png"
+    },
+    {
+      "id": 10,
+      "name": "Катана",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+14 к атаке",
+      "icon": "katana.png"
+    },
+    {
+      "id": 11,
+      "name": "Теневой клинок",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+25 к атаке, кража жизни",
+      "icon": "shadow_blade.png"
+    },
+    {
+      "id": 12,
+      "name": "Меч молнии",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+16 к атаке, шок",
+      "icon": "lightning_sword.png"
+    },
+    {
+      "id": 13,
+      "name": "Кровавый топор",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+28 к атаке, кровотечение",
+      "icon": "blood_axe.png"
+    },
+    {
+      "id": 14,
+      "name": "Клинок ветра",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+13 к атаке, скорость",
+      "icon": "wind_blade.png"
+    },
+    {
+      "id": 15,
+      "name": "Двуручный меч",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+20 к атаке",
+      "icon": "two_handed_sword.png"
+    },
+    {
+      "id": 16,
+      "name": "Посох огня",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+15 к магии, огонь",
+      "icon": "fire_staff.png"
+    },
+    {
+      "id": 17,
+      "name": "Посох льда",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+15 к магии, лед",
+      "icon": "ice_staff.png"
+    },
+    {
+      "id": 18,
+      "name": "Посох тьмы",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+30 к магии, тьма",
+      "icon": "dark_staff.png"
+    },
+    {
+      "id": 19,
+      "name": "Арбалет",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+12 к атаке, пробивание",
+      "icon": "crossbow.png"
+    },
+    {
+      "id": 20,
+      "name": "Лук охотника",
+      "type": "weapon",
+      "rarity": "green",
+      "effect": "+10 к атаке",
+      "icon": "hunter_bow.png"
+    },
+    {
+      "id": 21,
+      "name": "Лук теней",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+22 к атаке, скрытность",
+      "icon": "shadow_bow.png"
+    },
+    {
+      "id": 22,
+      "name": "Лук света",
+      "type": "weapon",
+      "rarity": "yellow",
+      "effect": "+40 к атаке, ослепление",
+      "icon": "light_bow.png"
+    },
+    {
+      "id": 23,
+      "name": "Золотой меч",
+      "type": "weapon",
+      "rarity": "yellow",
+      "effect": "+35 к атаке, богатство",
+      "icon": "gold_sword.png"
+    },
+    {
+      "id": 24,
+      "name": "Клинок дракона",
+      "type": "weapon",
+      "rarity": "yellow",
+      "effect": "+50 к атаке, огонь",
+      "icon": "dragon_blade.png"
+    },
+    {
+      "id": 25,
+      "name": "Демонический меч",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+32 к атаке, проклятие",
+      "icon": "demonic_sword.png"
+    },
+    {
+      "id": 26,
+      "name": "Молот титана",
+      "type": "weapon",
+      "rarity": "yellow",
+      "effect": "+60 к атаке, оглушение",
+      "icon": "titan_hammer.png"
+    },
+    {
+      "id": 27,
+      "name": "Косa смерти",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+35 к атаке, смерть",
+      "icon": "death_scythe.png"
+    },
+    {
+      "id": 28,
+      "name": "Кристальный меч",
+      "type": "weapon",
+      "rarity": "blue",
+      "effect": "+18 к атаке, хрупкость",
+      "icon": "crystal_sword.png"
+    },
+    {
+      "id": 29,
+      "name": "Обсидиановый клинок",
+      "type": "weapon",
+      "rarity": "purple",
+      "effect": "+28 к атаке, прочность",
+      "icon": "obsidian_blade.png"
+    },
+    {
+      "id": 30,
+      "name": "Легендарный меч героя",
+      "type": "weapon",
+      "rarity": "yellow",
+      "effect": "+100 к атаке, святость",
+      "icon": "hero_sword.png"
+    },
+    {
+      "id": 31,
+      "name": "Тканевая рубашка",
+      "type": "armor",
+      "rarity": "gray",
+      "effect": "+2 к защите",
+      "icon": "cloth_shirt.png"
+    },
+    {
+      "id": 32,
+      "name": "Кожаная броня",
+      "type": "armor",
+      "rarity": "green",
+      "effect": "+5 к защите",
+      "icon": "leather_armor.png"
+    },
+    {
+      "id": 33,
+      "name": "Кольчужный доспех",
+      "type": "armor",
+      "rarity": "green",
+      "effect": "+8 к защите",
+      "icon": "chainmail.png"
+    },
+    {
+      "id": 34,
+      "name": "Железная броня",
+      "type": "armor",
+      "rarity": "gray",
+      "effect": "+10 к защите",
+      "icon": "iron_armor.png"
+    },
+    {
+      "id": 35,
+      "name": "Стальная броня",
+      "type": "armor",
+      "rarity": "green",
+      "effect": "+15 к защите",
+      "icon": "steel_armor.png"
+    },
+    {
+      "id": 36,
+      "name": "Ледяная броня",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+20 к защите, сопротивление льду",
+      "icon": "ice_armor.png"
+    },
+    {
+      "id": 37,
+      "name": "Огненная броня",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+20 к защите, сопротивление огню",
+      "icon": "fire_armor.png"
+    },
+    {
+      "id": 38,
+      "name": "Теневая броня",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+35 к защите, скрытность",
+      "icon": "shadow_armor.png"
+    },
+    {
+      "id": 39,
+      "name": "Святая броня",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+50 к защите, регенерация",
+      "icon": "holy_armor.png"
+    },
+    {
+      "id": 40,
+      "name": "Доспех дракона",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+60 к защите, иммунитет к огню",
+      "icon": "dragon_armor.png"
+    },
+    {
+      "id": 41,
+      "name": "Плащ теней",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+15 к защите, уклонение",
+      "icon": "shadow_cloak.png"
+    },
+    {
+      "id": 42,
+      "name": "Плащ мага",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+10 к защите, +20 к мане",
+      "icon": "mage_cloak.png"
+    },
+    {
+      "id": 43,
+      "name": "Плащ огня",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+12 к защите, аура огня",
+      "icon": "fire_cloak.png"
+    },
+    {
+      "id": 44,
+      "name": "Плащ льда",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+12 к защите, аура льда",
+      "icon": "ice_cloak.png"
+    },
+    {
+      "id": 45,
+      "name": "Броня берсерка",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+25 к защите, +15 к атаке",
+      "icon": "berserker_armor.png"
+    },
+    {
+      "id": 46,
+      "name": "Броня паладина",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+55 к защите, святая аура",
+      "icon": "paladin_armor.png"
+    },
+    {
+      "id": 47,
+      "name": "Броня ассасина",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+20 к защите, крит. шанс",
+      "icon": "assassin_armor.png"
+    },
+    {
+      "id": 48,
+      "name": "Броня стража",
+      "type": "armor",
+      "rarity": "green",
+      "effect": "+18 к защите, блок",
+      "icon": "guardian_armor.png"
+    },
+    {
+      "id": 49,
+      "name": "Броня титана",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+80 к защите, медлительность",
+      "icon": "titan_armor.png"
+    },
+    {
+      "id": 50,
+      "name": "Демоническая броня",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+40 к защите, шипы",
+      "icon": "demonic_armor.png"
+    },
+    {
+      "id": 51,
+      "name": "Кристальная броня",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+22 к защите, отражение магии",
+      "icon": "crystal_armor.png"
+    },
+    {
+      "id": 52,
+      "name": "Обсидиановая броня",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+45 к защите, неразрушимость",
+      "icon": "obsidian_armor.png"
+    },
+    {
+      "id": 53,
+      "name": "Золотая броня",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+40 к защите, богатство",
+      "icon": "gold_armor.png"
+    },
+    {
+      "id": 54,
+      "name": "Броня духа",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+30 к защите, прохождение сквозь стены",
+      "icon": "spirit_armor.png"
+    },
+    {
+      "id": 55,
+      "name": "Броня ветра",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+18 к защите, скорость",
+      "icon": "wind_armor.png"
+    },
+    {
+      "id": 56,
+      "name": "Броня земли",
+      "type": "armor",
+      "rarity": "green",
+      "effect": "+20 к защите, стойкость",
+      "icon": "earth_armor.png"
+    },
+    {
+      "id": 57,
+      "name": "Броня молнии",
+      "type": "armor",
+      "rarity": "blue",
+      "effect": "+20 к защите, шок атакующих",
+      "icon": "lightning_armor.png"
+    },
+    {
+      "id": 58,
+      "name": "Броня хаоса",
+      "type": "armor",
+      "rarity": "purple",
+      "effect": "+38 к защите, случайный эффект",
+      "icon": "chaos_armor.png"
+    },
+    {
+      "id": 59,
+      "name": "Легендарный доспех героя",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+100 к защите, все статы +10",
+      "icon": "hero_armor.png"
+    },
+    {
+      "id": 60,
+      "name": "Броня бессмертия",
+      "type": "armor",
+      "rarity": "yellow",
+      "effect": "+120 к защите, возрождение",
+      "icon": "immortality_armor.png"
+    },
+    {
+      "id": 61,
+      "name": "Зелье здоровья",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "Восстанавливает 50 HP",
+      "icon": "health_potion.png"
+    },
+    {
+      "id": 62,
+      "name": "Зелье маны",
+      "type": "potion",
+      "rarity": "blue",
+      "effect": "Восстанавливает 50 MP",
+      "icon": "mana_potion.png"
+    },
+    {
+      "id": 63,
+      "name": "Малое зелье силы",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "+5 к силе на 10 мин",
+      "icon": "minor_strength_potion.png"
+    },
+    {
+      "id": 64,
+      "name": "Зелье скорости",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "+10 к скорости на 10 мин",
+      "icon": "speed_potion.png"
+    },
+    {
+      "id": 65,
+      "name": "Зелье защиты",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "+10 к защите на 10 мин",
+      "icon": "defense_potion.png"
+    },
+    {
+      "id": 66,
+      "name": "Эликсир огня",
+      "type": "potion",
+      "rarity": "blue",
+      "effect": "Атаки наносят урон огнем",
+      "icon": "fire_elixir.png"
+    },
+    {
+      "id": 67,
+      "name": "Эликсир льда",
+      "type": "potion",
+      "rarity": "blue",
+      "effect": "Атаки замораживают",
+      "icon": "ice_elixir.png"
+    },
+    {
+      "id": 68,
+      "name": "Эликсир молнии",
+      "type": "potion",
+      "rarity": "blue",
+      "effect": "Атаки бьют током",
+      "icon": "lightning_elixir.png"
+    },
+    {
+      "id": 69,
+      "name": "Ядовитое зелье",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "Отравляет оружие",
+      "icon": "poison_potion.png"
+    },
+    {
+      "id": 70,
+      "name": "Тёмный эликсир",
+      "type": "potion",
+      "rarity": "purple",
+      "effect": "+50 к магии тьмы",
+      "icon": "dark_elixir.png"
+    },
+    {
+      "id": 71,
+      "name": "Светлый эликсир",
+      "type": "potion",
+      "rarity": "yellow",
+      "effect": "Полное исцеление",
+      "icon": "light_elixir.png"
+    },
+    {
+      "id": 72,
+      "name": "Эликсир ярости",
+      "type": "potion",
+      "rarity": "purple",
+      "effect": "+100% к урону, -50% к защите",
+      "icon": "rage_elixir.png"
+    },
+    {
+      "id": 73,
+      "name": "Эликсир невидимости",
+      "type": "potion",
+      "rarity": "purple",
+      "effect": "Невидимость на 5 мин",
+      "icon": "invisibility_elixir.png"
+    },
+    {
+      "id": 74,
+      "name": "Эликсир удачи",
+      "type": "potion",
+      "rarity": "yellow",
+      "effect": "+100% шанс крита",
+      "icon": "luck_elixir.png"
+    },
+    {
+      "id": 75,
+      "name": "Эликсир опыта",
+      "type": "potion",
+      "rarity": "yellow",
+      "effect": "+50% получаемого опыта",
+      "icon": "xp_elixir.png"
+    },
+    {
+      "id": 76,
+      "name": "Эликсир регенерации",
+      "type": "potion",
+      "rarity": "green",
+      "effect": "Восстанавливает 5 HP/сек",
+      "icon": "regen_elixir.png"
+    },
+    {
+      "id": 77,
+      "name": "Эликсир энергии",
+      "type": "potion",
+      "rarity": "blue",
+      "effect": "Бесконечная выносливость",
+      "icon": "energy_elixir.png"
+    },
+    {
+      "id": 78,
+      "name": "Эликсир берсерка",
+      "type": "potion",
+      "rarity": "purple",
+      "effect": "Иммунитет к контролю",
+      "icon": "berserker_elixir.png"
+    },
+    {
+      "id": 79,
+      "name": "Легендарный эликсир",
+      "type": "potion",
+      "rarity": "yellow",
+      "effect": "Все статы +50 на 1 час",
+      "icon": "legendary_elixir.png"
+    },
+    {
+      "id": 80,
+      "name": "Эликсир бессмертия",
+      "type": "potion",
+      "rarity": "yellow",
+      "effect": "Спасает от смертельного удара",
+      "icon": "immortal_elixir.png"
+    },
+    {
+      "id": 81,
+      "name": "Книга силы",
+      "type": "book",
+      "rarity": "green",
+      "effect": "Навсегда +1 к силе",
+      "icon": "strength_book.png"
+    },
+    {
+      "id": 82,
+      "name": "Книга ловкости",
+      "type": "book",
+      "rarity": "green",
+      "effect": "Навсегда +1 к ловкости",
+      "icon": "agility_book.png"
+    },
+    {
+      "id": 83,
+      "name": "Книга интеллекта",
+      "type": "book",
+      "rarity": "blue",
+      "effect": "Навсегда +2 к интеллекту",
+      "icon": "intelligence_book.png"
+    },
+    {
+      "id": 84,
+      "name": "Книга защиты",
+      "type": "book",
+      "rarity": "green",
+      "effect": "Навсегда +1 к выносливости",
+      "icon": "defense_book.png"
+    },
+    {
+      "id": 85,
+      "name": "Книга магии",
+      "type": "book",
+      "rarity": "blue",
+      "effect": "Навсегда +2 к мудрости",
+      "icon": "magic_book.png"
+    },
+    {
+      "id": 86,
+      "name": "Книга огня",
+      "type": "book",
+      "rarity": "blue",
+      "effect": "Изучить заклинание: Огненный шар",
+      "icon": "fire_book.png"
+    },
+    {
+      "id": 87,
+      "name": "Книга льда",
+      "type": "book",
+      "rarity": "blue",
+      "effect": "Изучить заклинание: Ледяная стрела",
+      "icon": "ice_book.png"
+    },
+    {
+      "id": 88,
+      "name": "Книга молнии",
+      "type": "book",
+      "rarity": "blue",
+      "effect": "Изучить заклинание: Цепная молния",
+      "icon": "lightning_book.png"
+    },
+    {
+      "id": 89,
+      "name": "Тёмный гримуар",
+      "type": "book",
+      "rarity": "purple",
+      "effect": "Изучить заклинание: Похищение души",
+      "icon": "dark_grimoire.png"
+    },
+    {
+      "id": 90,
+      "name": "Священная книга",
+      "type": "book",
+      "rarity": "yellow",
+      "effect": "Изучить заклинание: Воскрешение",
+      "icon": "holy_book.png"
+    },
+    {
+      "id": 91,
+      "name": "Амулет силы",
+      "type": "accessory",
+      "rarity": "green",
+      "effect": "+5 к силе",
+      "icon": "strength_amulet.png"
+    },
+    {
+      "id": 92,
+      "name": "Кольцо маны",
+      "type": "accessory",
+      "rarity": "blue",
+      "effect": "+50 к мане",
+      "icon": "mana_ring.png"
+    },
+    {
+      "id": 93,
+      "name": "Кольцо защиты",
+      "type": "accessory",
+      "rarity": "green",
+      "effect": "+5 к защите",
+      "icon": "defense_ring.png"
+    },
+    {
+      "id": 94,
+      "name": "Амулет огня",
+      "type": "accessory",
+      "rarity": "blue",
+      "effect": "Сопротивление огню 20%",
+      "icon": "fire_amulet.png"
+    },
+    {
+      "id": 95,
+      "name": "Амулет льда",
+      "type": "accessory",
+      "rarity": "blue",
+      "effect": "Сопротивление льду 20%",
+      "icon": "ice_amulet.png"
+    },
+    {
+      "id": 96,
+      "name": "Амулет тьмы",
+      "type": "accessory",
+      "rarity": "purple",
+      "effect": "Сопротивление тьме 50%",
+      "icon": "dark_amulet.png"
+    },
+    {
+      "id": 97,
+      "name": "Амулет света",
+      "type": "accessory",
+      "rarity": "yellow",
+      "effect": "Иммунитет к слепоте",
+      "icon": "light_amulet.png"
+    },
+    {
+      "id": 98,
+      "name": "Реликвия древних",
+      "type": "accessory",
+      "rarity": "purple",
+      "effect": "Все статы +10",
+      "icon": "ancient_relic.png"
+    },
+    {
+      "id": 99,
+      "name": "Сердце дракона",
+      "type": "accessory",
+      "rarity": "yellow",
+      "effect": "Возрождение при смерти",
+      "icon": "dragon_heart.png"
+    },
+    {
+      "id": 100,
+      "name": "Легендарный артефакт",
+      "type": "accessory",
+      "rarity": "yellow",
+      "effect": "Удвоение всех характеристик",
+      "icon": "legendary_artifact.png"
+    }
+  ]
+}

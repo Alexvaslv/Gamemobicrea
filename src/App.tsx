@@ -11,6 +11,35 @@ import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getD
 import { Toaster, toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 
+// --- Firestore Data Service ---
+
+const PLAYER_DATA_COLLECTION = "player_data";
+
+export async function savePlayerData(userId: string, data: any) {
+  try {
+    await setDoc(doc(db, PLAYER_DATA_COLLECTION, userId), {
+      ...data,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, PLAYER_DATA_COLLECTION + "/" + userId);
+  }
+}
+
+export async function loadPlayerData(userId: string) {
+  try {
+    const docRef = doc(db, PLAYER_DATA_COLLECTION, userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, PLAYER_DATA_COLLECTION + "/" + userId);
+    return null;
+  }
+}
+
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
@@ -198,20 +227,110 @@ const getAgeSuffix = (age: number) => {
 
 const SHOP_ITEMS: Record<string, any[]> = {
   equipment: [
-    { id: 'shop_sword_1', name: 'Меч Новичка', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 0, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'shop_sword_ice', name: 'Ледяной Клинок', level: 5, rarity: 'rare', type: 'Меч', cost: 500, currency: 'silver', bonusPercent: 5, iconUrl: 'https://example.com/ice_sword.png', stats: { strength: 5, agility: 3, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'shop_sword_fire', name: 'Огненный Топор', level: 5, rarity: 'rare', type: 'Меч', cost: 500, currency: 'silver', bonusPercent: 5, iconUrl: 'https://example.com/fire_axe.png', stats: { strength: 6, agility: 1, intuition: 0, endurance: 1, wisdom: 0 } },
-    { id: 'shop_sword_gold', name: 'Золотой Меч', level: 10, rarity: 'epic', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, iconUrl: 'https://example.com/gold_sword.png', stats: { strength: 10, agility: 5, intuition: 0, endurance: 2, wisdom: 0 } },
-    { id: 'shop_armor_1', name: 'Кожаный Доспех', level: 1, rarity: 'common', type: 'Рубашка', cost: 120, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 3, wisdom: 0 } },
-    { id: 'shop_shield_1', name: 'Деревянный Щит', level: 1, rarity: 'common', type: 'Второе оружие', cost: 80, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 2, wisdom: 0 } },
+    { id: 'wpn_1', name: 'Железный меч', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_2', name: 'Стальной меч', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_3', name: 'Короткий кинжал', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 1, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_4', name: 'Боевой топор', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_5', name: 'Копьё', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_6', name: 'Ледяной меч', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_7', name: 'Огненный топор', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_8', name: 'Ядовитый кинжал', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_9', name: 'Молот войны', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_10', name: 'Катана', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_11', name: 'Теневой клинок', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_12', name: 'Меч молнии', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_13', name: 'Кровавый топор', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_14', name: 'Клинок ветра', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_15', name: 'Двуручный меч', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_16', name: 'Посох огня', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_17', name: 'Посох льда', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_18', name: 'Посох тьмы', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_19', name: 'Арбалет', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_20', name: 'Лук охотника', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_21', name: 'Лук теней', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_22', name: 'Лук света', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_23', name: 'Золотой меч', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_24', name: 'Клинок дракона', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_25', name: 'Демонический меч', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_26', name: 'Молот титана', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_27', name: 'Косa смерти', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_28', name: 'Кристальный меч', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_29', name: 'Обсидиановый клинок', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_30', name: 'Легендарный меч героя', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'arm_31', name: 'Тканевая рубашка', level: 1, rarity: 'common', type: 'Рубашка', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 0, agility: 0, intuition: 0, endurance: 3, wisdom: 0 } },
+    { id: 'arm_32', name: 'Кожаная броня', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
+    { id: 'arm_33', name: 'Кольчужный доспех', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
+    { id: 'arm_34', name: 'Железная броня', level: 1, rarity: 'common', type: 'Рубашка', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 0, agility: 0, intuition: 0, endurance: 3, wisdom: 0 } },
+    { id: 'arm_35', name: 'Стальная броня', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
+    { id: 'arm_36', name: 'Ледяная броня', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_37', name: 'Огненная броня', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_38', name: 'Теневая броня', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_39', name: 'Святая броня', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_40', name: 'Доспех дракона', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_41', name: 'Плащ теней', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_42', name: 'Плащ мага', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_43', name: 'Плащ огня', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_44', name: 'Плащ льда', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_45', name: 'Броня берсерка', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_46', name: 'Броня паладина', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_47', name: 'Броня ассасина', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_48', name: 'Броня стража', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
+    { id: 'arm_49', name: 'Броня титана', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_50', name: 'Демоническая броня', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_51', name: 'Кристальная броня', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_52', name: 'Обсидиановая броня', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_53', name: 'Золотая броня', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_54', name: 'Броня духа', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_55', name: 'Броня ветра', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_56', name: 'Броня земли', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
+    { id: 'arm_57', name: 'Броня молнии', level: 10, rarity: 'rare', type: 'Рубашка', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 0, agility: 0, intuition: 0, endurance: 12, wisdom: 0 } },
+    { id: 'arm_58', name: 'Броня хаоса', level: 20, rarity: 'epic', type: 'Рубашка', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 0, agility: 0, intuition: 0, endurance: 24, wisdom: 0 } },
+    { id: 'arm_59', name: 'Легендарный доспех героя', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'arm_60', name: 'Броня бессмертия', level: 30, rarity: 'legendary', type: 'Рубашка', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 0, agility: 0, intuition: 0, endurance: 45, wisdom: 0 } },
+    { id: 'amu_91', name: 'Амулет силы', level: 5, rarity: 'uncommon', type: 'Ожерелье', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 2, agility: 2, intuition: 2, endurance: 2, wisdom: 2 } },
+    { id: 'amu_92', name: 'Кольцо маны', level: 10, rarity: 'rare', type: 'Перчатки', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 4, agility: 4, intuition: 4, endurance: 4, wisdom: 4 } },
+    { id: 'amu_93', name: 'Кольцо защиты', level: 5, rarity: 'uncommon', type: 'Перчатки', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 2, agility: 2, intuition: 2, endurance: 2, wisdom: 2 } },
+    { id: 'amu_94', name: 'Амулет огня', level: 10, rarity: 'rare', type: 'Ожерелье', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 4, agility: 4, intuition: 4, endurance: 4, wisdom: 4 } },
+    { id: 'amu_95', name: 'Амулет льда', level: 10, rarity: 'rare', type: 'Ожерелье', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 4, agility: 4, intuition: 4, endurance: 4, wisdom: 4 } },
+    { id: 'amu_96', name: 'Амулет тьмы', level: 20, rarity: 'epic', type: 'Ожерелье', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 8, agility: 8, intuition: 8, endurance: 8, wisdom: 8 } },
+    { id: 'amu_97', name: 'Амулет света', level: 30, rarity: 'legendary', type: 'Ожерелье', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 15, agility: 15, intuition: 15, endurance: 15, wisdom: 15 } },
+    { id: 'amu_98', name: 'Реликвия древних', level: 20, rarity: 'epic', type: 'Второе оружие', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 8, agility: 8, intuition: 8, endurance: 8, wisdom: 8 } },
+    { id: 'amu_99', name: 'Сердце дракона', level: 30, rarity: 'legendary', type: 'Ожерелье', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 15, agility: 15, intuition: 15, endurance: 15, wisdom: 15 } },
+    { id: 'amu_100', name: 'Легендарный артефакт', level: 30, rarity: 'legendary', type: 'Ожерелье', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 15, agility: 15, intuition: 15, endurance: 15, wisdom: 15 } },
   ],
   elixirs: [
-    { id: 'shop_elixir_hp_1', name: 'Малое зелье здоровья', level: 1, rarity: 'common', type: 'elixir', cost: 50, currency: 'silver', description: 'Восстанавливает 50 HP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'shop_elixir_mp_1', name: 'Малое зелье маны', level: 1, rarity: 'common', type: 'elixir', cost: 50, currency: 'silver', description: 'Восстанавливает 30 MP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_61', name: 'Зелье здоровья', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Восстанавливает HP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_62', name: 'Зелье маны', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Восстанавливает MP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_63', name: 'Малое зелье силы', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус силы', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_64', name: 'Зелье скорости', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус скорости', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_65', name: 'Зелье защиты', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус защиты', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_66', name: 'Эликсир огня', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон огнем', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_67', name: 'Эликсир льда', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон льдом', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_68', name: 'Эликсир молнии', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон молнией', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_69', name: 'Ядовитое зелье', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Урон ядом', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_70', name: 'Тёмный эликсир', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Темная магия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_71', name: 'Светлый эликсир', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Светлая магия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_72', name: 'Эликсир ярости', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Ярость', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_73', name: 'Эликсир невидимости', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Невидимость', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_74', name: 'Эликсир удачи', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Удача', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_75', name: 'Эликсир опыта', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Опыт', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_76', name: 'Эликсир регенерации', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Регенерация', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_77', name: 'Эликсир энергии', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Энергия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_78', name: 'Эликсир берсерка', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Берсерк', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_79', name: 'Легендарный эликсир', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Легендарный эффект', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'elx_80', name: 'Эликсир бессмертия', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Бессмертие', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
   ],
   books: [
-    { id: 'shop_book_str_1', name: 'Книга Силы I', level: 1, rarity: 'common', type: 'book', cost: 500, currency: 'silver', description: 'Навсегда увеличивает силу на 1', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'shop_book_int_1', name: 'Книга Интуиции I', level: 1, rarity: 'common', type: 'book', cost: 500, currency: 'silver', description: 'Навсегда увеличивает интуицию на 1', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_81', name: 'Книга силы', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_82', name: 'Книга ловкости', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_83', name: 'Книга интеллекта', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_84', name: 'Книга защиты', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_85', name: 'Книга магии', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_86', name: 'Книга огня', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_87', name: 'Книга льда', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_88', name: 'Книга молнии', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_89', name: 'Тёмный гримуар', level: 20, rarity: 'epic', type: 'book', cost: 10000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bk_90', name: 'Священная книга', level: 30, rarity: 'legendary', type: 'book', cost: 40000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
   ],
   chests: [
     { id: 'shop_chest_iron', name: 'Железный Сундук', level: 1, rarity: 'common', type: 'chest', cost: 10, currency: 'diamonds', description: 'Содержит случайные ресурсы и предметы', isChest: true, bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
@@ -368,6 +487,30 @@ export default function App() {
         }
       } else {
         setAuthError(null);
+        // Load player data from Firestore
+        const data = await loadPlayerData(user.uid);
+        if (data) {
+          // Initialize state with loaded data
+          setPlayerName(data.playerName || "Герой");
+          setPlayerRace(data.playerRace || "Человек");
+          setPlayerEmail(data.playerEmail || "");
+          setRealName(data.realName || "");
+          setBirthYear(data.birthYear || 2000);
+          setCountry(data.country || "Неизвестно");
+          setCharacterStatus(data.characterStatus || "Новичок");
+          setPlayerGender(data.playerGender || "male");
+          setAvatarUrl(data.avatarUrl || "");
+          setPlayerAge(data.playerAge || 18);
+          setPlayerBirthday(data.playerBirthday || "01.01.2000");
+          setHasGiftKey(data.hasGiftKey || false);
+          setHasCompletedOnboarding(data.hasCompletedOnboarding || false);
+          setIsNameHidden(data.isNameHidden || false);
+          setIsAgeHidden(data.isAgeHidden || false);
+          setIsBirthdayHidden(data.isBirthdayHidden || false);
+          setIsCountryHidden(data.isCountryHidden || false);
+          setSilver(data.silver || 0);
+          // ... (add other fields as needed)
+        }
         setIsAuthReady(true);
       }
     });
@@ -1267,59 +1410,55 @@ export default function App() {
         lastSaved: new Date().toISOString()
       };
 
-      // Save to LocalStorage
-      localStorage.setItem("rpg_player_name", playerName);
-      localStorage.setItem("rpg_player_race", playerRace);
-      localStorage.setItem("rpg_player_email", playerEmail);
-      localStorage.setItem("rpg_real_name", realName);
-      localStorage.setItem("rpg_birth_year", birthYear.toString());
-      localStorage.setItem("rpg_country", country);
-      localStorage.setItem("rpg_character_status", characterStatus);
-      localStorage.setItem("rpg_player_gender", playerGender);
-      localStorage.setItem("rpg_avatar_url", avatarUrl);
-      localStorage.setItem("rpg_player_age", playerAge.toString());
-      localStorage.setItem("rpg_player_birthday", playerBirthday);
-      localStorage.setItem("rpg_name_hidden", isNameHidden.toString());
-      localStorage.setItem("rpg_age_hidden", isAgeHidden.toString());
-      localStorage.setItem("rpg_birthday_hidden", isBirthdayHidden.toString());
-      localStorage.setItem("rpg_country_hidden", isCountryHidden.toString());
-      localStorage.setItem("rpg_silver", silver.toString());
-      localStorage.setItem("rpg_iron", iron.toString());
-      localStorage.setItem("rpg_gold", gold.toString());
-      localStorage.setItem("rpg_diamonds", diamonds.toString());
-      localStorage.setItem("rpg_xp", xp.toString());
-      localStorage.setItem("rpg_inventory", JSON.stringify(inventory));
-      localStorage.setItem("rpg_books_inventory", JSON.stringify(booksInventory));
-      localStorage.setItem("rpg_elixirs_inventory", JSON.stringify(elixirsInventory));
-      localStorage.setItem("rpg_chests_inventory", JSON.stringify(chestsInventory));
-      localStorage.setItem("rpg_equipped_items", JSON.stringify(equippedItems));
-      localStorage.setItem("rpg_messages", JSON.stringify(messages));
-      localStorage.setItem("rpg_has_gift_key", hasGiftKey.toString());
-      localStorage.setItem("rpg_prev_level", prevLevel.toString());
-      localStorage.setItem("rpg_player_friends", JSON.stringify(friends));
-      localStorage.setItem("rpg_clan_id", clanId || "");
-      if (clanName) {
-        localStorage.setItem("rpg_clan_name", clanName);
-        localStorage.setItem("rpg_clan_role", clanRole);
-        localStorage.setItem("rpg_clan_members", JSON.stringify(clanMembers));
-        if (clanJoinedDate) localStorage.setItem("rpg_clan_joined_date", clanJoinedDate);
-      } else {
-        localStorage.removeItem("rpg_clan_name");
-        localStorage.removeItem("rpg_clan_role");
-        localStorage.removeItem("rpg_clan_members");
-        localStorage.removeItem("rpg_clan_joined_date");
+      // Save to Firestore
+      if (auth.currentUser) {
+        await savePlayerData(auth.currentUser.uid, {
+          playerName,
+          playerRace,
+          playerEmail,
+          realName,
+          birthYear,
+          country,
+          characterStatus,
+          playerGender,
+          avatarUrl,
+          playerAge,
+          playerBirthday,
+          isNameHidden,
+          isAgeHidden,
+          isBirthdayHidden,
+          isCountryHidden,
+          silver,
+          iron,
+          gold,
+          diamonds,
+          xp,
+          inventory,
+          booksInventory,
+          elixirsInventory,
+          chestsInventory,
+          equippedItems,
+          messages,
+          hasGiftKey,
+          prevLevel,
+          friends,
+          clanId,
+          clanName,
+          clanRole,
+          clanMembers,
+          clanJoinedDate,
+          forestProgress,
+          mountainProgress,
+          blackWolfKills,
+          spentStrength,
+          spentAgility,
+          spentIntuition,
+          spentEndurance,
+          spentWisdom,
+          playerBadges,
+          playerStatus
+        });
       }
-      localStorage.setItem("rpg_forest_progress", forestProgress.toString());
-      localStorage.setItem("rpg_mountain_progress", mountainProgress.toString());
-      localStorage.setItem("rpg_black_wolf_kills", blackWolfKills.toString());
-      localStorage.setItem("rpg_spent_strength", spentStrength.toString());
-      localStorage.setItem("rpg_spent_agility", spentAgility.toString());
-      localStorage.setItem("rpg_spent_intuition", spentIntuition.toString());
-      localStorage.setItem("rpg_spent_endurance", spentEndurance.toString());
-      localStorage.setItem("rpg_spent_wisdom", spentWisdom.toString());
-      localStorage.setItem("rpg_player_badges", JSON.stringify(playerBadges));
-      if (playerStatus) localStorage.setItem("rpg_player_status", playerStatus);
-      else localStorage.removeItem("rpg_player_status");
 
       // Save to Firestore
       try {
@@ -5194,6 +5333,32 @@ export default function App() {
                       className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50 transition-all"
                     />
                   </div>
+                  
+                  <div className="w-full space-y-2 pt-2">
+                    <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Или выберите из галереи</label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix&backgroundColor=b6e3f4",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka&backgroundColor=c0aede",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Milo&backgroundColor=ffdfbf",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Jude&backgroundColor=d1d4f9",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Avery&backgroundColor=b6e3f4",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Eden&backgroundColor=c0aede",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Chase&backgroundColor=ffdfbf",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Ryder&backgroundColor=d1d4f9",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Oliver&backgroundColor=b6e3f4",
+                        "https://api.dicebear.com/7.x/adventurer/svg?seed=Mia&backgroundColor=c0aede"
+                      ].map((url, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setTempAvatarUrl(url)}
+                          className={`w-full aspect-square rounded-xl overflow-hidden border-2 transition-all ${tempAvatarUrl === url ? 'border-lime-400 scale-105 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'border-white/10 hover:border-white/30 opacity-70 hover:opacity-100'}`}
+                        >
+                          <img src={url} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Identity Section */}
@@ -5413,55 +5578,40 @@ export default function App() {
                         }
                         
                         setDiamonds(prev => prev - 50);
-                        setPlayerName(tempUsername);
-                        localStorage.setItem("rpg_player_name", tempUsername);
+                        // Update Firestore
+                        if (user) {
+                          await savePlayerData(user.uid, {
+                            playerName: finalUsername,
+                            realName: tempRealName,
+                            playerRace: tempRace,
+                            playerGender: tempGender,
+                            playerAge: newAge,
+                            playerBirthday: tempBirthday,
+                            country: tempCountry,
+                            characterStatus: tempStatus,
+                            avatarUrl: tempAvatarUrl,
+                            isNameHidden: tempIsNameHidden,
+                            isAgeHidden: tempIsAgeHidden,
+                            isBirthdayHidden: tempIsBirthdayHidden,
+                            isCountryHidden: tempIsCountryHidden
+                          });
+                        }
+                        
                         finalUsername = tempUsername;
                       }
 
                       setRealName(tempRealName);
                       setPlayerRace(tempRace);
                       setPlayerGender(tempGender);
-                      
-                      const calculateAge = (bday: string) => {
-                        const parts = bday.split('.');
-                        if (parts.length !== 3) return playerAge;
-                        const d = parseInt(parts[0]);
-                        const m = parseInt(parts[1]);
-                        const y = parseInt(parts[2]);
-                        if (isNaN(d) || isNaN(m) || isNaN(y)) return playerAge;
-                        
-                        const birthDate = new Date(y, m - 1, d);
-                        const today = new Date();
-                        let age = today.getFullYear() - birthDate.getFullYear();
-                        const monthDiff = today.getMonth() - birthDate.getMonth();
-                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                          age--;
-                        }
-                        return Math.max(1, age);
-                      };
-
-                      const newAge = calculateAge(tempBirthday);
                       setPlayerAge(newAge);
                       setPlayerBirthday(tempBirthday);
                       setCountry(tempCountry);
                       setCharacterStatus(tempStatus);
+                      setAvatarUrl(tempAvatarUrl);
                       setIsNameHidden(tempIsNameHidden);
                       setIsAgeHidden(tempIsAgeHidden);
                       setIsBirthdayHidden(tempIsBirthdayHidden);
                       setIsCountryHidden(tempIsCountryHidden);
-                      
-                      localStorage.setItem("rpg_real_name", tempRealName);
-                      localStorage.setItem("rpg_player_race", tempRace);
-                      localStorage.setItem("rpg_player_gender", tempGender);
-                      localStorage.setItem("rpg_player_age", newAge.toString());
-                      localStorage.setItem("rpg_player_birthday", tempBirthday);
-                      localStorage.setItem("rpg_country", tempCountry);
-                      localStorage.setItem("rpg_character_status", tempStatus);
-                      localStorage.setItem("rpg_avatar_url", tempAvatarUrl);
-                      localStorage.setItem("rpg_name_hidden", tempIsNameHidden.toString());
-                      localStorage.setItem("rpg_age_hidden", tempIsAgeHidden.toString());
-                      localStorage.setItem("rpg_birthday_hidden", tempIsBirthdayHidden.toString());
-                      localStorage.setItem("rpg_country_hidden", tempIsCountryHidden.toString());
 
                       const user = auth.currentUser;
                       const finalAvatarUrl = tempAvatarUrl || (tempGender === 'male' 
