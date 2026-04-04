@@ -267,6 +267,12 @@ const EquipSlot = ({ label, item, onUnequip }: { label: string, item?: Item | nu
   </div>
 );
 
+const BOTS = [
+  { userId: "bot_1", playerName: "Странник", avatarUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=bot1", level: 2 },
+  { userId: "bot_2", playerName: "Тень", avatarUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=bot2", level: 5 },
+  { userId: "bot_3", playerName: "Мудрец", avatarUrl: "https://api.dicebear.com/7.x/adventurer/svg?seed=bot3", level: 10 },
+];
+
 const FOREST_ENEMIES = [
   { name: "Хромой серый волк", maxHealth: 150, xpMin: 50, xpMax: 80, silver: 10, drops: ["Деревянный меч", "Деревянный щит"], recLevel: 1 },
   { name: "Серый волк", maxHealth: 350, xpMin: 150, xpMax: 250, silver: 25, drops: ["Волчья шкура"], recLevel: 2 },
@@ -713,6 +719,18 @@ export default function App() {
 
   // Real-time Socket.IO connection
   useEffect(() => {
+    // Initialize bots
+    setOnlineUsers(prev => {
+      const next = new Set(prev);
+      BOTS.forEach(bot => next.add(bot.userId));
+      return next;
+    });
+    setOnlineUserProfiles(prev => {
+      const next = { ...prev };
+      BOTS.forEach(bot => next[bot.userId] = bot);
+      return next;
+    });
+
     const newSocket = io(window.location.origin);
     setSocket(newSocket);
 
@@ -772,6 +790,15 @@ export default function App() {
       }
     });
 
+    // Bot chat messages
+    const botInterval = setInterval(() => {
+      const bot = BOTS[Math.floor(Math.random() * BOTS.length)];
+      const messages = ["Привет всем!", "Кто идет в лес?", "Как дела?", "Кто поможет с квестом?", "Где найти золото?", "Я сегодня нашел меч!"];
+      const message = messages[Math.floor(Math.random() * messages.length)];
+      
+      setGlobalEvents(prev => [{ message: `${bot.playerName}: ${message}`, date: new Date().toISOString() }, ...prev].slice(0, 50));
+    }, 15000); // Every 15 seconds
+
     newSocket.on("player_action", (data) => {
       setGlobalEvents(prev => [data, ...prev].slice(0, 50));
       setHasNewEvents(true);
@@ -779,6 +806,7 @@ export default function App() {
 
     return () => {
       newSocket.disconnect();
+      clearInterval(botInterval);
     };
   }, []);
 
