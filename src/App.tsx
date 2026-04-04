@@ -426,8 +426,9 @@ export default function App() {
   const [page, setPage] = useState(() => {
     const savedPage = localStorage.getItem("rpg_current_page");
     const isLoggedIn = localStorage.getItem("rpg_is_logged_in") === "true";
-    if (isLoggedIn && savedPage) return parseInt(savedPage);
-    return isLoggedIn ? 2 : 1;
+    const defaultPage = isLoggedIn ? 2 : 1;
+    if (isLoggedIn && savedPage) return parseInt(savedPage, 10) || defaultPage;
+    return defaultPage;
   });
 
   useEffect(() => {
@@ -549,7 +550,7 @@ export default function App() {
   const [wolfHealth, setWolfHealth] = useState(100);
   const [battleStep, setBattleStep] = useState(0);
   const [battleLog, setBattleLog] = useState<string[]>([]);
-  const [silver, setSilver] = useState(() => parseInt(localStorage.getItem("rpg_silver") || "0"));
+  const [silver, setSilver] = useState(() => parseInt(localStorage.getItem("rpg_silver") || "0", 10) || 0);
   const [playerName, setPlayerName] = useState(() => localStorage.getItem("rpg_player_name") || "Герой");
   const [chatMessages, setChatMessages] = useState<{id: string, sender: string, text: string, timestamp: any, avatarUrl?: string}[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -636,7 +637,7 @@ export default function App() {
   const [playerRace, setPlayerRace] = useState(() => localStorage.getItem("rpg_player_race") || "Человек");
   const [playerEmail, setPlayerEmail] = useState(() => localStorage.getItem("rpg_player_email") || "");
   const [realName, setRealName] = useState(() => localStorage.getItem("rpg_real_name") || "");
-  const [birthYear, setBirthYear] = useState(() => parseInt(localStorage.getItem("rpg_birth_year") || "2000"));
+  const [birthYear, setBirthYear] = useState(() => parseInt(localStorage.getItem("rpg_birth_year") || "2000", 10) || 2000);
   const [country, setCountry] = useState(() => localStorage.getItem("rpg_country") || "Неизвестно");
   const [characterStatus, setCharacterStatus] = useState(() => localStorage.getItem("rpg_character_status") || "Новичок");
   const [playerGender, setPlayerGender] = useState<"male" | "female">(() => {
@@ -645,7 +646,7 @@ export default function App() {
   });
   const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem("rpg_avatar_url") || "");
 
-  const [playerAge, setPlayerAge] = useState(() => parseInt(localStorage.getItem("rpg_player_age") || "18"));
+  const [playerAge, setPlayerAge] = useState(() => parseInt(localStorage.getItem("rpg_player_age") || "18", 10) || 18);
   const [playerBirthday, setPlayerBirthday] = useState(() => localStorage.getItem("rpg_player_birthday") || "01.01.2000");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasGiftKey, setHasGiftKey] = useState(() => localStorage.getItem("rpg_has_gift_key") === "true");
@@ -707,7 +708,7 @@ export default function App() {
   }, [isLoggedIn]);
 
 
-  const [xp, setXp] = useState(() => parseInt(localStorage.getItem("rpg_xp") || "100"));
+  const [xp, setXp] = useState(() => parseInt(localStorage.getItem("rpg_xp") || "100", 10) || 100);
   const currentLevel = useMemo(() => {
     let level = 1;
     for (let i = 1; i <= 85; i++) {
@@ -922,9 +923,9 @@ export default function App() {
     if (status === "online") return <span className="text-green-500 mr-1">●</span>;
     return <span className="text-zinc-500 mr-1">○</span>;
   };
-  const [iron, setIron] = useState(() => parseInt(localStorage.getItem("rpg_iron") || "0"));
-  const [gold, setGold] = useState(() => parseInt(localStorage.getItem("rpg_gold") || "0"));
-  const [diamonds, setDiamonds] = useState(() => parseInt(localStorage.getItem("rpg_diamonds") || "0"));
+  const [iron, setIron] = useState(() => parseInt(localStorage.getItem("rpg_iron") || "0", 10) || 0);
+  const [gold, setGold] = useState(() => parseInt(localStorage.getItem("rpg_gold") || "0", 10) || 0);
+  const [diamonds, setDiamonds] = useState(() => parseInt(localStorage.getItem("rpg_diamonds") || "0", 10) || 0);
   const [inventory, setInventory] = useState<Item[]>(() => {
     const saved = localStorage.getItem("rpg_inventory");
     return saved ? JSON.parse(saved) : [];
@@ -958,8 +959,8 @@ export default function App() {
   });
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
   const [lastXpGained, setLastXpGained] = useState(0);
-  const [forestProgress, setForestProgress] = useState(() => parseInt(localStorage.getItem("rpg_forest_progress") || "0"));
-  const [mountainProgress, setMountainProgress] = useState(() => parseInt(localStorage.getItem("rpg_mountain_progress") || "0"));
+  const [forestProgress, setForestProgress] = useState(() => parseInt(localStorage.getItem("rpg_forest_progress") || "0", 10) || 0);
+  const [mountainProgress, setMountainProgress] = useState(() => parseInt(localStorage.getItem("rpg_mountain_progress") || "0", 10) || 0);
   const [matchmakingStatus, setMatchmakingStatus] = useState<'idle' | 'searching' | 'matched'>('idle');
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [currentBattleId, setCurrentBattleId] = useState<string | null>(null);
@@ -972,7 +973,7 @@ export default function App() {
   const [lastDrops, setLastDrops] = useState<string[]>([]);
   const [lastSilver, setLastSilver] = useState(0);
   const [lastIron, setLastIron] = useState(0);
-  const [blackWolfKills, setBlackWolfKills] = useState(() => parseInt(localStorage.getItem("rpg_black_wolf_kills") || "0"));
+  const [blackWolfKills, setBlackWolfKills] = useState(() => parseInt(localStorage.getItem("rpg_black_wolf_kills") || "0", 10) || 0);
   const [isOnline, setIsOnline] = useState(true);
   const [lastSeen, setLastSeen] = useState(new Date());
   const [clanName, setClanName] = useState<string | null>(() => {
@@ -1035,11 +1036,11 @@ export default function App() {
     }
   }, [clanName, clanJoinedDate, clanRole]);
 
-  const [spentStrength, setSpentStrength] = useState(() => parseInt(localStorage.getItem("rpg_spent_strength") || "0"));
-  const [spentAgility, setSpentAgility] = useState(() => parseInt(localStorage.getItem("rpg_spent_agility") || "0"));
-  const [spentIntuition, setSpentIntuition] = useState(() => parseInt(localStorage.getItem("rpg_spent_intuition") || "0"));
-  const [spentEndurance, setSpentEndurance] = useState(() => parseInt(localStorage.getItem("rpg_spent_endurance") || "0"));
-  const [spentWisdom, setSpentWisdom] = useState(() => parseInt(localStorage.getItem("rpg_spent_wisdom") || "0"));
+  const [spentStrength, setSpentStrength] = useState(() => parseInt(localStorage.getItem("rpg_spent_strength") || "0", 10) || 0);
+  const [spentAgility, setSpentAgility] = useState(() => parseInt(localStorage.getItem("rpg_spent_agility") || "0", 10) || 0);
+  const [spentIntuition, setSpentIntuition] = useState(() => parseInt(localStorage.getItem("rpg_spent_intuition") || "0", 10) || 0);
+  const [spentEndurance, setSpentEndurance] = useState(() => parseInt(localStorage.getItem("rpg_spent_endurance") || "0", 10) || 0);
+  const [spentWisdom, setSpentWisdom] = useState(() => parseInt(localStorage.getItem("rpg_spent_wisdom") || "0", 10) || 0);
   const [pendingStats, setPendingStats] = useState({
     strength: 0,
     agility: 0,
@@ -1052,7 +1053,7 @@ export default function App() {
     const saved = localStorage.getItem("rpg_messages");
     return saved ? JSON.parse(saved) : [];
   });
-  const [prevLevel, setPrevLevel] = useState(() => parseInt(localStorage.getItem("rpg_prev_level") || "1"));
+  const [prevLevel, setPrevLevel] = useState(() => parseInt(localStorage.getItem("rpg_prev_level") || "1", 10) || 1);
 
   // Global announcements for level-ups and items
 
@@ -1061,7 +1062,7 @@ export default function App() {
   const nextLevelXp = isMaxLevel ? currentLevelBaseXp : XP_TABLE[currentLevel + 1];
   const xpIntoLevel = isMaxLevel ? 0 : xp - currentLevelBaseXp;
   const xpNeededForNext = isMaxLevel ? 1 : nextLevelXp - currentLevelBaseXp;
-  const xpPercentage = isMaxLevel ? 100 : (xpIntoLevel / xpNeededForNext) * 100;
+  const xpPercentage = isMaxLevel ? 100 : Math.max(0, Math.min(100, isNaN(xpIntoLevel / xpNeededForNext) ? 0 : (xpIntoLevel / xpNeededForNext) * 100));
 
   const [currentEnemy, setCurrentEnemy] = useState<any>(FOREST_ENEMIES[0]);
   
