@@ -2421,8 +2421,16 @@ export default function App() {
                           // LOGIN LOGIC
                           const existingUser = userDoc.data();
                           if (existingUser.password === regPassword) {
-                            const { signInAnonymously } = await import('firebase/auth');
-                            await signInAnonymously(auth);
+                            try {
+                              const { signInAnonymously } = await import('firebase/auth');
+                              await signInAnonymously(auth);
+                            } catch (authErr: any) {
+                              if (authErr.code === 'auth/admin-restricted-operation') {
+                                toast.error("Ошибка: Включите 'Anonymous' провайдер в Firebase Console!");
+                                return;
+                              }
+                              throw authErr;
+                            }
                             setPlayerName(regUsername);
                             setPlayerRace(existingUser.race || "Человек");
                             setPlayerGender(existingUser.gender || "male");
@@ -2460,8 +2468,16 @@ export default function App() {
                         
                         const register = async (nickname: string, password: string, rName: string) => {
                           try {
-                            const { signInAnonymously } = await import('firebase/auth');
-                            await signInAnonymously(auth);
+                            try {
+                              const { signInAnonymously } = await import('firebase/auth');
+                              await signInAnonymously(auth);
+                            } catch (authErr: any) {
+                              if (authErr.code === 'auth/admin-restricted-operation') {
+                                toast.error("Ошибка: Включите 'Anonymous' (Анонимно) в Firebase Console -> Authentication -> Sign-in method!");
+                                throw new Error("Anonymous auth disabled");
+                              }
+                              throw authErr;
+                            }
                             
                             const welcomeMessage = {
                               id: "welcome_" + Date.now(),
@@ -2655,8 +2671,16 @@ export default function App() {
                       if (userDoc.exists()) {
                         const existingUser = userDoc.data();
                         if (existingUser.password === regPassword) {
-                          const { signInAnonymously } = await import('firebase/auth');
-                          await signInAnonymously(auth);
+                          try {
+                            const { signInAnonymously } = await import('firebase/auth');
+                            await signInAnonymously(auth);
+                          } catch (authErr: any) {
+                            if (authErr.code === 'auth/admin-restricted-operation') {
+                              toast.error("Ошибка: Включите 'Anonymous' провайдер в Firebase Console!");
+                              return;
+                            }
+                            throw authErr;
+                          }
                           setPlayerName(regUsername);
                           setPlayerRace(existingUser.race || "Человек");
                           setPlayerGender(existingUser.gender || "male");
