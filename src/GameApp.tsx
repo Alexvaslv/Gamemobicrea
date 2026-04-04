@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Home, User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
+import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
@@ -180,7 +180,6 @@ interface Item {
   spell_power?: number;
   cooldown_reduction?: number;
   isChest?: boolean;
-  count?: number;
   chestRewards?: {
     iron?: number;
     silver?: number;
@@ -560,7 +559,7 @@ export default function App() {
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [silver, setSilver] = useState(() => parseInt(localStorage.getItem("rpg_silver") || "0", 10) || 0);
   const [playerName, setPlayerName] = useState(() => localStorage.getItem("rpg_player_name") || "Герой");
-  const [chatMessages, setChatMessages] = useState<{id: string, sender: string, text: string, timestamp: any, avatarUrl?: string, isCreator?: boolean, isAdmin?: boolean}[]>([]);
+  const [chatMessages, setChatMessages] = useState<{id: string, sender: string, text: string, timestamp: any, avatarUrl?: string}[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [news, setNews] = useState<{id: string, title: string, content: string, date: string}[]>([]);
   const [forumPosts, setForumPosts] = useState<{id: string, title: string, author: string, content: string, timestamp: any, replies: number}[]>([]);
@@ -949,11 +948,11 @@ export default function App() {
     const saved = localStorage.getItem("rpg_inventory");
     return saved ? JSON.parse(saved) : [];
   });
-  const [booksInventory, setBooksInventory] = useState<Item[]>(() => {
+  const [booksInventory, setBooksInventory] = useState<string[]>(() => {
     const saved = localStorage.getItem("rpg_books_inventory");
     return saved ? JSON.parse(saved) : [];
   });
-  const [elixirsInventory, setElixirsInventory] = useState<Item[]>(() => {
+  const [elixirsInventory, setElixirsInventory] = useState<string[]>(() => {
     const saved = localStorage.getItem("rpg_elixirs_inventory");
     return saved ? JSON.parse(saved) : [];
   });
@@ -1068,7 +1067,7 @@ export default function App() {
     wisdom: 0
   });
   const [adminResourceAmount, setAdminResourceAmount] = useState<number>(100);
-  const [messages, setMessages] = useState<{id: string | number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean}, claimed?: boolean}[]>(() => {
+  const [messages, setMessages] = useState<{id: number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean}, claimed?: boolean}[]>(() => {
     const saved = localStorage.getItem("rpg_messages");
     return saved ? JSON.parse(saved) : [];
   });
@@ -1925,12 +1924,12 @@ export default function App() {
     if (Math.random() < 0.03) {
       const books = ["Книга силы новичка", "Книга ловкости новичка", "Книга мудрости новичка"];
       const book = books[Math.floor(Math.random() * books.length)];
-      setBooksInventory(prev => [...prev].slice(0, 9).concat(generateItem(book, 1)));
+      setBooksInventory(prev => [...prev].slice(0, 9).concat(book));
     }
     if (Math.random() < 0.08) {
       const elixirs = ["Малое зелье здоровья", "Малое зелье маны", "Эликсир силы"];
       const elixir = elixirs[Math.floor(Math.random() * elixirs.length)];
-      setElixirsInventory(prev => [...prev].slice(0, 9).concat(generateItem(elixir, 1)));
+      setElixirsInventory(prev => [...prev].slice(0, 9).concat(elixir));
     }
 
     setLastDrops(finalDrops.map(d => d.name));
@@ -1974,179 +1973,127 @@ export default function App() {
         {page === 1 && (
           <motion.div
             key="page1"
-            className="flex flex-col items-center justify-center min-h-[100dvh] px-6 relative overflow-hidden bg-[#0D0D0F]"
+            className="flex flex-col items-center justify-center min-h-[100dvh] px-6 relative overflow-hidden bg-[#22263F]"
             initial={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "-100vh" }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Abstract Background Shapes */}
-            <div className="absolute top-[-15%] left-[-20%] w-[70vw] h-[70vw] bg-gradient-to-br from-[#FF6B00]/40 to-transparent rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
-            <div className="absolute bottom-[-10%] right-[-20%] w-[80vw] h-[80vw] bg-gradient-to-tl from-[#7C4DFF]/40 to-transparent rounded-full mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="w-full max-w-md relative z-10 flex flex-col"
+              className="w-full max-w-md relative z-10 flex flex-col items-center"
             >
-              {/* Logo / Icon */}
+              {/* Geometric Logo */}
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 1, delay: 0.1 }}
-                className="mb-8 flex justify-center"
+                className="mb-12"
               >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-[#7C4DFF] blur-2xl opacity-50 rounded-full" />
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#7C4DFF] to-[#3A86FF] rounded-3xl flex items-center justify-center relative z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
-                    <Crown className="w-10 h-10 text-white" strokeWidth={1.5} />
-                  </div>
-                </div>
+                <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="40" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M50 10 L50 90" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M10 50 L90 50" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M21.7 21.7 L78.3 78.3" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M21.7 78.3 L78.3 21.7" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M50 10 L78.3 21.7 L90 50 L78.3 78.3 L50 90 L21.7 78.3 L10 50 L21.7 21.7 Z" stroke="#FF6B9E" strokeWidth="3" />
+                </svg>
               </motion.div>
 
               <motion.h1
-                className="text-3xl font-bold text-white mb-2 text-center"
+                className="text-2xl font-bold text-white mb-4 text-center tracking-widest"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Вступи в мир
+                WELCOME
               </motion.h1>
               
               <motion.p
-                className="text-zinc-400 text-center text-sm mb-10 leading-relaxed"
+                className="text-zinc-400 text-center text-sm mb-8 max-w-[280px] leading-relaxed"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1, delay: 0.4 }}
               >
-                Создай аккаунт, чтобы начать свое путешествие
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
               </motion.p>
 
+              {/* Pagination Dots */}
+              <motion.div 
+                className="flex items-center gap-2 mb-16"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 0.6 }}
+              >
+                <div className="w-2 h-2 rounded-full bg-white"></div>
+                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+              </motion.div>
+
               {!isLoggedIn ? (
-                <motion.div 
-                  className="w-full flex flex-col gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.5 }}
-                >
-                  {/* Input Fields */}
-                  <div className="space-y-4 mb-4">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-zinc-500" />
-                      </div>
-                      <input 
-                        type="text" 
-                        placeholder="Email / Телефон" 
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-[#7C4DFF] focus:ring-1 focus:ring-[#7C4DFF] transition-all"
-                      />
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-zinc-500" />
-                      </div>
-                      <input 
-                        type="text" 
-                        placeholder="Username" 
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-[#7C4DFF] focus:ring-1 focus:ring-[#7C4DFF] transition-all"
-                      />
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-zinc-500" />
-                      </div>
-                      <input 
-                        type="password" 
-                        placeholder="Password" 
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-[#7C4DFF] focus:ring-1 focus:ring-[#7C4DFF] transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <button className="relative w-full group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF6B00] via-[#FF3D3D] to-[#7C4DFF] rounded-2xl blur opacity-60 group-hover:opacity-100 transition duration-500"></div>
-                    <div className="relative w-full py-4 rounded-2xl bg-gradient-to-r from-[#FF6B00] to-[#FF3D3D] text-white font-bold text-base flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110 transition-all">
-                      Sign Up
-                    </div>
-                  </button>
-
-                  <button className="w-full py-4 rounded-2xl bg-transparent border border-white/20 text-white font-bold text-base hover:bg-white/5 transition-colors">
-                    Sign In
-                  </button>
-
-                  <div className="flex items-center gap-4 my-2">
-                    <div className="flex-1 h-px bg-white/10"></div>
-                    <span className="text-zinc-500 text-sm">или через</span>
-                    <div className="flex-1 h-px bg-white/10"></div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={async () => {
+                <div className="w-full flex flex-col items-center gap-6">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                        const googleProvider = new GoogleAuthProvider();
+                        const result = await signInWithPopup(auth, googleProvider);
+                        const user = result.user;
+                        
+                        let userDoc;
                         try {
-                          const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
-                          const googleProvider = new GoogleAuthProvider();
-                          const result = await signInWithPopup(auth, googleProvider);
-                          const user = result.user;
-                          
-                          let userDoc;
-                          try {
-                            userDoc = await getDoc(doc(db, "users", user.uid));
-                          } catch (error: any) {
-                            handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-                            return;
-                          }
-                          
-                          if (userDoc.exists()) {
-                            const data = userDoc.data();
-                            setPlayerName(data.username || data.playerName);
-                            setPlayerEmail(data.email || data.playerEmail);
-                            if (data.race) setPlayerRace(data.race);
-                            if (data.gender) setPlayerGender(data.gender);
-                            if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
-                            setIsLoggedIn(true);
-                            setHasCompletedOnboarding(true);
-                            setPage(2);
-                            toast.success("С возвращением через Google!");
-                          } else {
-                            // New user
-                            setPlayerEmail(user.email || "");
-                            setShowOnboarding(true);
-                            setPage(14); // Go to character creation
-                            toast.success("Добро пожаловать! Завершите создание персонажа.");
-                          }
+                          userDoc = await getDoc(doc(db, "users", user.uid));
                         } catch (error: any) {
-                          toast.error("Ошибка авторизации Google: " + error.message);
+                          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+                          return;
                         }
-                      }}
-                      className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                      </svg>
-                    </button>
-                    <button className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                      <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" fill="#1877F2">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </motion.div>
+                        
+                        if (userDoc.exists()) {
+                          const data = userDoc.data();
+                          setPlayerName(data.username || data.playerName);
+                          setPlayerEmail(data.email || data.playerEmail);
+                          if (data.race) setPlayerRace(data.race);
+                          if (data.gender) setPlayerGender(data.gender);
+                          if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+                          setIsLoggedIn(true);
+                          setHasCompletedOnboarding(true);
+                          setPage(2);
+                          toast.success("С возвращением через Google!");
+                        } else {
+                          // New user
+                          setPlayerEmail(user.email || "");
+                          setShowOnboarding(true);
+                          setPage(14); // Go to character creation
+                          toast.success("Добро пожаловать! Завершите создание персонажа.");
+                        }
+                      } catch (error: any) {
+                        toast.error("Ошибка авторизации Google: " + error.message);
+                      }
+                    }}
+                    className="w-full py-4 rounded-full bg-white text-[#22263F] font-bold text-base hover:bg-zinc-200 transition-colors flex items-center justify-center gap-3 shadow-lg"
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Log In with Google
+                  </button>
+                  
+                  <button className="text-zinc-400 text-sm font-medium hover:text-white transition-colors">
+                    Register
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={() => {
                     setPage(2);
                   }}
-                  className="relative w-full group mt-8"
+                  className="w-full py-4 rounded-full bg-white text-[#22263F] font-bold text-base hover:bg-zinc-200 transition-colors shadow-lg mt-8"
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#7C4DFF] via-[#3A86FF] to-[#7C4DFF] rounded-2xl blur opacity-60 group-hover:opacity-100 transition duration-500"></div>
-                  <div className="relative w-full py-4 rounded-2xl bg-gradient-to-r from-[#7C4DFF] to-[#3A86FF] text-white font-bold text-base flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110 transition-all">
-                    Продолжить игру
-                  </div>
+                  Продолжить игру
                 </button>
               )}
             </motion.div>
@@ -2887,144 +2834,139 @@ export default function App() {
         {page === 2 && (
           <motion.div
             key="page2"
-            className="min-h-[100dvh] flex flex-col items-center p-4 pb-24 text-zinc-100 relative overflow-hidden"
+            className="min-h-[100dvh] flex flex-col items-center p-4 pb-24 text-zinc-100 relative"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Background Image with Blur Overlay */}
-            <div className="absolute inset-0 z-0">
-              <img 
-                src="https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                alt="Background" 
-                className="w-full h-full object-cover opacity-40"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-[#0D0D0F]/80 backdrop-blur-md"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-transparent to-[#0D0D0F]/50"></div>
-            </div>
+            {/* Mobile Game Engine Gradients */}
+            <div className="fixed top-[-10%] left-[-20%] w-[80vw] h-[80vw] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-pulse pointer-events-none z-0" />
+            <div className="fixed bottom-[-10%] right-[-20%] w-[70vw] h-[70vw] bg-blue-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse pointer-events-none z-0" style={{ animationDelay: '2s' }} />
+            <div className="fixed top-[30%] right-[10%] w-[50vw] h-[50vw] bg-pink-600/10 rounded-full mix-blend-screen filter blur-[90px] animate-pulse pointer-events-none z-0" style={{ animationDelay: '1s' }} />
 
             <div className="w-full flex flex-col items-center relative z-10">
-              {/* RPG Profile Header */}
-              <div className="w-full max-w-md flex flex-col items-center mb-8 px-4 mt-8">
-                <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-[#7C4DFF] blur-xl opacity-40 rounded-full animate-pulse"></div>
-                  <div className="w-24 h-24 rounded-full border-2 border-[#7C4DFF] p-1 relative z-10 shadow-[0_0_15px_rgba(124,77,255,0.5)]">
+              {/* Character Info Bar */}
+              <div className="w-full max-w-md flex items-center justify-between mb-6 px-2 mt-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-2xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
                     <img 
                       src={avatarUrl || (playerGender === 'male' 
                         ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                         : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                       }
                       alt="Avatar" 
-                      className="w-full h-full rounded-full object-cover"
+                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                </div>
-                
-                <h2 className="text-2xl font-black tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] mb-1">
-                  {playerName}
-                </h2>
-                <div className="text-[#3A86FF] font-bold text-sm mb-6 drop-shadow-[0_0_5px_rgba(58,134,255,0.5)]">
-                  Level {currentLevel}
-                </div>
-
-                {/* HP & EXP Bars */}
-                <div className="w-full space-y-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-5 shadow-lg">
-                  {/* HP Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-[#FF3D3D] flex items-center gap-1"><Heart className="w-3 h-3" /> HP</span>
-                      <span className="text-white">{playerHealth} / {maxPlayerHealth}</span>
-                    </div>
-                    <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        className="h-full bg-gradient-to-r from-[#FF3D3D] to-[#FF6B00] shadow-[0_0_10px_rgba(255,61,61,0.5)]"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(playerHealth / maxPlayerHealth) * 100}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-lime-400">{currentLevel}</span>
                   </div>
-
-                  {/* EXP Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <span className="text-[#3A86FF] flex items-center gap-1"><Star className="w-3 h-3" /> EXP</span>
-                      <span className="text-white">{xp} / {nextLevelXp}</span>
-                    </div>
-                    <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        className="h-full bg-gradient-to-r from-[#3A86FF] to-[#7C4DFF] shadow-[0_0_10px_rgba(58,134,255,0.5)]"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${xpPercentage}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
+                    {isCreator && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Онлайн</span>
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons Row */}
-              <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-6 px-4">
-                <button 
-                  onClick={() => setPage(30)}
-                  className="py-4 bg-gradient-to-br from-[#7C4DFF]/20 to-[#3A86FF]/10 border border-white/10 rounded-3xl text-white hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2 shadow-lg group"
-                >
-                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-[#7C4DFF]" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest">Коллаборация</span>
-                </button>
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setPage(29)}
-                  className="py-4 bg-white/5 border border-white/10 rounded-3xl text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2 shadow-lg group"
+                  className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors relative"
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Swords className="w-6 h-6 text-[#3A86FF]" />
+                  <Users className="w-5 h-5" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-white">{onlineUsers.size}</span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-widest">Игроки ({onlineUsers.size})</span>
+                </button>
+                <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
+                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                  <Settings className="w-5 h-5" />
                 </button>
               </div>
+            </div>
 
             {/* Global News Ticker */}
             {globalEvents.length > 0 && (
-              <div className="w-full max-w-md mb-6 bg-white/5 border border-white/10 rounded-3xl py-3 px-5 overflow-hidden relative shadow-inner">
-                <div className="flex items-center gap-4 animate-marquee whitespace-nowrap">
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Live:</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 font-medium">
+              <div className="w-full max-w-md mb-6 bg-lime-400/5 border border-lime-400/10 rounded-2xl py-2 px-4 overflow-hidden relative">
+                <div className="flex items-center gap-3 animate-marquee whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-lime-400 uppercase tracking-widest flex-shrink-0">События:</span>
+                  <p className="text-[10px] text-zinc-300">
                     {globalEvents[0].message}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Currency Cards */}
-            <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-8 px-4">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow-xl hover:bg-white/10 transition-colors cursor-pointer group">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
-                  <Coins className="w-6 h-6 text-amber-400" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-black">Серебро</span>
-                  <span className="text-lg font-black text-white tracking-tight">{silver.toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow-xl hover:bg-white/10 transition-colors cursor-pointer group">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
-                  <Gem className="w-6 h-6 text-blue-400" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-black">Алмазы</span>
-                  <span className="text-lg font-black text-white tracking-tight">{diamonds.toLocaleString()}</span>
+            {/* Main Stats Ring (Sporty Vibe) */}
+            <div className="w-full max-w-md flex justify-center mb-8">
+              <div className="relative w-48 h-48 flex items-center justify-center">
+                {/* Background Ring */}
+                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                  {/* Progress Ring */}
+                  <circle 
+                    cx="50" cy="50" r="45" fill="none" 
+                    stroke="url(#limeGradient)" 
+                    strokeWidth="8" 
+                    strokeLinecap="round"
+                    strokeDasharray="282.7"
+                    strokeDashoffset={282.7 - (282.7 * (xpPercentage / 100))}
+                    className="transition-all duration-1000 ease-out"
+                  />
+                  <defs>
+                    <linearGradient id="limeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#A3E635" />
+                      <stop offset="100%" stopColor="#10B981" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                
+                {/* Inner Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 rounded-full glass-card border border-white/10 flex items-center justify-center mb-2 overflow-hidden">
+                    <img 
+                      src={avatarUrl || (playerGender === 'male' 
+                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
+                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
+                      }
+                      alt="Avatar" 
+                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <span className="text-3xl font-black tracking-tighter">{currentLevel}</span>
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Уровень</span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 w-full max-w-md px-4">
+            {/* Quick Stats Cards */}
+            <div className="w-full max-w-md grid grid-cols-3 gap-3 mb-8">
+              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
+                <Heart className="w-5 h-5 text-rose-500 mb-2" />
+                <span className="text-lg font-bold">{playerHealth}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Здоровье</span>
+              </div>
+              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
+                <Coins className="w-5 h-5 text-zinc-400 mb-2" />
+                <span className="text-lg font-bold">{silver}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Серебро</span>
+              </div>
+              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
+                <Gem className="w-5 h-5 text-cyan-400 mb-2" />
+                <span className="text-lg font-bold">{gold}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Золото</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 w-full max-w-md">
               <div className="grid grid-cols-2 gap-3">
                 <motion.button 
                   onClick={() => setPage(18)}
@@ -3370,7 +3312,7 @@ export default function App() {
             <div className="flex justify-between items-center gap-1 mt-4 bg-white/5 border border-white/5 rounded-2xl p-2 w-full">
               <div className="flex-1 flex items-center gap-2 pl-1">
                 <div className={`w-7 h-7 rounded-lg ${playerGender === 'male' ? 'bg-blue-500/10' : 'bg-pink-500/10'} flex items-center justify-center shrink-0`}>
-                  {playerGender === 'male' ? <Circle className="w-3.5 h-3.5 text-blue-400" /> : <Circle className="w-3.5 h-3.5 text-pink-400" />}
+                  {playerGender === 'male' ? <Mars className="w-3.5 h-3.5 text-blue-400" /> : <Venus className="w-3.5 h-3.5 text-pink-400" />}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Пол</span>
@@ -3441,11 +3383,11 @@ export default function App() {
                         </div>
                       )}
                       {[
-                        { label: "Сила", base: 10 + spentStrength, gear: gearBonuses.bonuses.strength, elixir: elixirBonuses.strength, setter: setSpentStrength, spent: spentStrength, key: 'strength', color: 'text-red-400' },
-                        { label: "Ловкость", base: 10 + spentAgility, gear: gearBonuses.bonuses.agility, elixir: elixirBonuses.agility, setter: setSpentAgility, spent: spentAgility, key: 'agility', color: 'text-blue-400' },
-                        { label: "Интуиция", base: 10 + spentIntuition, gear: gearBonuses.bonuses.intuition, elixir: elixirBonuses.intuition, setter: setSpentIntuition, spent: spentIntuition, key: 'intuition', color: 'text-purple-400' },
-                        { label: "Выносливость", base: 10 + spentEndurance, gear: gearBonuses.bonuses.endurance, elixir: elixirBonuses.endurance, setter: setSpentEndurance, spent: spentEndurance, key: 'endurance', color: 'text-green-400' },
-                        { label: "Мудрость", base: 10 + spentWisdom, gear: gearBonuses.bonuses.wisdom, elixir: elixirBonuses.wisdom, setter: setSpentWisdom, spent: spentWisdom, key: 'wisdom', color: 'text-cyan-400' },
+                        { label: "Сила", base: 10 + spentStrength, gear: gearBonuses.strength, elixir: elixirBonuses.strength, setter: setSpentStrength, spent: spentStrength, key: 'strength', color: 'text-red-400' },
+                        { label: "Ловкость", base: 10 + spentAgility, gear: gearBonuses.agility, elixir: elixirBonuses.agility, setter: setSpentAgility, spent: spentAgility, key: 'agility', color: 'text-blue-400' },
+                        { label: "Интуиция", base: 10 + spentIntuition, gear: gearBonuses.intuition, elixir: elixirBonuses.intuition, setter: setSpentIntuition, spent: spentIntuition, key: 'intuition', color: 'text-purple-400' },
+                        { label: "Выносливость", base: 10 + spentEndurance, gear: gearBonuses.endurance, elixir: elixirBonuses.endurance, setter: setSpentEndurance, spent: spentEndurance, key: 'endurance', color: 'text-green-400' },
+                        { label: "Мудрость", base: 10 + spentWisdom, gear: gearBonuses.wisdom, elixir: elixirBonuses.wisdom, setter: setSpentWisdom, spent: spentWisdom, key: 'wisdom', color: 'text-cyan-400' },
                       ].map((stat, idx) => {
                         const pending = pendingStats[stat.key as keyof typeof pendingStats];
                         const total = stat.base + pending + stat.gear + stat.elixir;
@@ -3706,30 +3648,24 @@ export default function App() {
                     <div className="pt-4 flex flex-col gap-4">
                       {/* Selected Item Card */}
                       {selectedItemIdx !== null && (
-                        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center gap-4 shadow-lg">
-                          <div className={`w-16 h-16 rounded-xl bg-zinc-900 border-2 flex items-center justify-center overflow-hidden shrink-0 relative ${
-                            ITEMS[selectedItemIdx].rarity === 'legendary' ? 'border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.5)]' :
-                            ITEMS[selectedItemIdx].rarity === 'epic' ? 'border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.5)]' :
-                            ITEMS[selectedItemIdx].rarity === 'rare' ? 'border-[#3A86FF] shadow-[0_0_15px_rgba(58,134,255,0.5)]' :
-                            'border-zinc-500 shadow-[0_0_10px_rgba(161,161,170,0.3)]'
+                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                          <div className={`w-16 h-16 rounded-lg bg-zinc-900 border flex items-center justify-center overflow-hidden shrink-0 ${
+                            ITEMS[selectedItemIdx].rarity === 'legendary' ? 'border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]' :
+                            ITEMS[selectedItemIdx].rarity === 'epic' ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
+                            ITEMS[selectedItemIdx].rarity === 'rare' ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
+                            'border-white/20'
                           }`}>
-                            <div className={`absolute inset-0 opacity-20 ${
-                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'bg-[#FFD700]' :
-                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'bg-[#7C4DFF]' :
-                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'bg-[#3A86FF]' :
-                              'bg-zinc-500'
-                            }`}></div>
                             <img 
                               src={ITEMS[selectedItemIdx].icon} 
                               alt={`Item ${selectedItemIdx + 1}`}
-                              className="w-full h-full object-contain relative z-10"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                           <div className="flex flex-col">
                             <h3 className={`text-sm font-bold ${
-                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'text-[#FFD700] drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]' :
-                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'text-[#7C4DFF] drop-shadow-[0_0_5px_rgba(124,77,255,0.5)]' :
-                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'text-[#3A86FF] drop-shadow-[0_0_5px_rgba(58,134,255,0.5)]' :
+                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'text-orange-400' :
+                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'text-purple-400' :
+                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'text-blue-400' :
                               'text-zinc-300'
                             }`}>Предмет #{selectedItemIdx + 1}</h3>
                             <p className="text-[10px] text-zinc-400 mt-1">ID: {ITEMS[selectedItemIdx].id}</p>
@@ -3743,22 +3679,22 @@ export default function App() {
                       )}
 
                       {/* Grid */}
-                      <div className="grid grid-cols-5 gap-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                         {ITEMS.map((item, idx) => {
                           const isSelected = selectedItemIdx === idx;
                           
                           const rarityColors = {
-                            common: "bg-zinc-900/80 border-zinc-500/50 shadow-[0_0_8px_rgba(161,161,170,0.2)]",
-                            rare: "bg-[#3A86FF]/10 border-[#3A86FF]/50 shadow-[0_0_8px_rgba(58,134,255,0.3)]",
-                            epic: "bg-[#7C4DFF]/10 border-[#7C4DFF]/50 shadow-[0_0_8px_rgba(124,77,255,0.3)]",
-                            legendary: "bg-[#FFD700]/10 border-[#FFD700]/50 shadow-[0_0_8px_rgba(255,215,0,0.3)]"
+                            common: "bg-zinc-900/80 border-white/10 hover:border-white/30",
+                            rare: "bg-blue-950/40 border-blue-500/30 hover:border-blue-500/50",
+                            epic: "bg-purple-950/40 border-purple-500/30 hover:border-purple-500/50",
+                            legendary: "bg-orange-950/40 border-orange-500/30 hover:border-orange-500/50"
                           };
                           
                           const selectedColors = {
-                            common: "bg-zinc-800 border-zinc-400 shadow-[0_0_15px_rgba(161,161,170,0.5)] z-10",
-                            rare: "bg-[#3A86FF]/20 border-[#3A86FF] shadow-[0_0_15px_rgba(58,134,255,0.6)] z-10",
-                            epic: "bg-[#7C4DFF]/20 border-[#7C4DFF] shadow-[0_0_15px_rgba(124,77,255,0.6)] z-10",
-                            legendary: "bg-[#FFD700]/20 border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.6)] z-10"
+                            common: "bg-zinc-800 border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10",
+                            rare: "bg-blue-900/40 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] z-10",
+                            epic: "bg-purple-900/40 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] z-10",
+                            legendary: "bg-orange-900/40 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)] z-10"
                           };
 
                           return (
@@ -3767,20 +3703,14 @@ export default function App() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setSelectedItemIdx(isSelected ? null : idx)}
-                                className={`w-full h-full rounded-xl border-2 flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
+                                className={`w-full h-full rounded-xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
                                   isSelected ? selectedColors[item.rarity] : rarityColors[item.rarity]
                                 }`}
                               >
-                                <div className={`absolute inset-0 opacity-20 ${
-                                  item.rarity === 'legendary' ? 'bg-[#FFD700]' :
-                                  item.rarity === 'epic' ? 'bg-[#7C4DFF]' :
-                                  item.rarity === 'rare' ? 'bg-[#3A86FF]' :
-                                  'bg-zinc-500'
-                                }`}></div>
                                 <img 
                                   src={item.icon} 
                                   alt={`Item ${idx + 1}`}
-                                  className="w-3/4 h-3/4 object-contain relative z-10"
+                                  className="w-3/4 h-3/4 object-contain"
                                   loading="lazy"
                                 />
                               </motion.button>
@@ -5141,195 +5071,80 @@ export default function App() {
           </motion.div>
         )}
 
-        {page === 30 && (
-          <motion.div
-            key="page30"
-            className="min-h-[100dvh] flex flex-col bg-[#0D0D0F] text-zinc-100 w-full max-w-md mx-auto p-6 pb-24 relative overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            {/* Background Accents */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#7C4DFF]/10 blur-[100px] rounded-full -mr-32 -mt-32" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#3A86FF]/10 blur-[100px] rounded-full -ml-32 -mb-32" />
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div>
-                <h2 className="text-3xl font-black tracking-tight text-white">Коллаборация</h2>
-                <p className="text-zinc-500 text-xs font-medium">Управление гильдией и проектами</p>
-              </div>
-              <button onClick={() => setPage(2)} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors shadow-lg">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative mb-8 z-10">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-              <input 
-                type="text" 
-                placeholder="Поиск проектов или игроков..." 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#7C4DFF]/50 transition-colors shadow-inner"
-              />
-            </div>
-
-            {/* Active Projects (Quests) */}
-            <div className="mb-8 relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white tracking-tight">Активные квесты</h3>
-                <button className="text-xs font-bold text-[#7C4DFF] hover:underline">Все</button>
-              </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
-                {[
-                  { id: 1, title: "Осада крепости", progress: 65, color: "#7C4DFF", members: 4 },
-                  { id: 2, title: "Сбор ресурсов", progress: 30, color: "#3A86FF", members: 2 },
-                  { id: 3, title: "Разведка", progress: 90, color: "#00E676", members: 1 }
-                ].map((project) => (
-                  <div key={project.id} className="min-w-[240px] snap-start bg-white/5 border border-white/10 rounded-3xl p-5 shadow-xl hover:bg-white/10 transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                        <ScrollText className="w-6 h-6" style={{ color: project.color }} />
-                      </div>
-                      <div className="flex -space-x-2">
-                        {[...Array(project.members)].map((_, i) => (
-                          <div key={i} className="w-7 h-7 rounded-full border-2 border-[#0D0D0F] bg-zinc-800 overflow-hidden shadow-md">
-                            <img src={`https://i.pravatar.cc/100?u=${project.id + i}`} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <h4 className="text-base font-bold text-white mb-4 group-hover:text-[#7C4DFF] transition-colors">{project.title}</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                        <span>Прогресс</span>
-                        <span style={{ color: project.color }}>{project.progress}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-                        <motion.div 
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: project.color, width: `${project.progress}%` }}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${project.progress}%` }}
-                          transition={{ duration: 1.5, ease: "easeOut" }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Team Members */}
-            <div className="mb-8 relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white tracking-tight">Участники гильдии</h3>
-                <button className="text-xs font-bold text-[#7C4DFF] hover:underline">Пригласить</button>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "ShadowHunter", role: "Лидер", status: "online" },
-                  { name: "CyberMage", role: "Офицер", status: "online" },
-                  { name: "NeonKnight", role: "Участник", status: "offline" }
-                ].map((member, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-3xl shadow-lg hover:bg-white/10 transition-colors group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-800 overflow-hidden border border-white/5 shadow-inner">
-                          <img src={`https://i.pravatar.cc/100?u=${member.name}`} alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-[#0D0D0F] ${member.status === 'online' ? 'bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.6)]' : 'bg-zinc-600'}`} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white group-hover:text-[#7C4DFF] transition-colors">{member.name}</h4>
-                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{member.role}</p>
-                      </div>
-                    </div>
-                    <button className="p-2 text-zinc-500 hover:text-white transition-colors">
-                      <MessageSquare className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom Action */}
-            <button className="w-full py-5 bg-gradient-to-r from-[#7C4DFF] to-[#3A86FF] rounded-3xl text-white font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(124,77,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all relative z-10">
-              Создать новый проект
-            </button>
-          </motion.div>
-        )}
-
         {page === 19 && (
           <motion.div
             key="page19"
-            className="min-h-[100dvh] flex flex-col bg-[#0D0D0F] text-zinc-100 w-full max-w-md mx-auto absolute inset-0 z-50"
+            className="min-h-[100dvh] flex flex-col bg-slate-50 text-slate-900 w-full max-w-md mx-auto absolute inset-0 z-50"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
           >
             {/* Header */}
-            <div className="bg-white/5 backdrop-blur-md px-4 py-4 flex items-center justify-between shadow-sm z-10 border-b border-white/10">
-              <button onClick={() => setPage(2)} className="p-2 -ml-2 text-zinc-400 hover:text-white transition-colors">
+            <div className="bg-white px-4 py-4 flex items-center justify-between shadow-sm z-10">
+              <button onClick={() => setPage(2)} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 transition-colors">
                 <ChevronRight className="w-6 h-6 rotate-180" />
               </button>
               <div className="text-center">
-                <h2 className="text-base font-bold text-white">Общий чат</h2>
-                <p className="text-[10px] text-zinc-400 font-medium">Голос мира</p>
+                <h2 className="text-base font-bold text-slate-800">Общий чат</h2>
+                <p className="text-[10px] text-slate-400 font-medium">Голос мира</p>
               </div>
-              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-white/10">
+              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-100">
                 <img src={avatarUrl || "https://via.placeholder.com/32"} alt="Avatar" className="w-full h-full object-cover" />
               </div>
             </div>
 
-            {/* Online Users List */}
-            <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex items-center justify-between">
+            {/* Online Users List (Optional, styled to fit) */}
+            <div className="bg-white/50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">В сети: {onlineUsers.size}</span>
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">В сети: {onlineUsers.size}</span>
               </div>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar pb-32">
-              <div className="flex justify-center mb-2">
-                <span className="text-[10px] font-black text-zinc-500 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Сегодня</span>
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
+              <div className="text-center my-2">
+                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Сегодня</span>
               </div>
               
               {chatMessages.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 gap-4">
-                  <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center">
-                    <MessageSquare className="w-8 h-8 opacity-20" />
-                  </div>
-                  <p className="text-sm font-medium">Сообщений пока нет...</p>
+                <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+                  Сообщений пока нет...
                 </div>
               ) : (
                 chatMessages.map((msg) => {
                   const isMe = msg.sender === playerName;
                   
                   return (
-                    <div key={msg.id} className={`flex gap-3 w-full ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex-shrink-0 overflow-hidden border border-white/10 shadow-lg">
-                        <img src={msg.avatarUrl || `https://i.pravatar.cc/100?u=${msg.sender}`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      </div>
+                    <div key={msg.id} className={`flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      {!isMe && (
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden mt-auto">
+                          <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                      )}
                       
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                        <div className="flex items-center gap-2 mb-1.5 px-1">
-                          <span className={`text-[11px] font-black uppercase tracking-tight ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-zinc-400'}`}>
-                            {msg.sender}
-                          </span>
-                          <span className="text-[9px] text-zinc-600 font-medium">
-                            {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
-                          </span>
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                        {!isMe && (
+                          <div className="flex items-center gap-1 mb-1 ml-1">
+                            <span className={`text-[10px] font-bold ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-slate-500'}`}>
+                              {msg.sender}
+                            </span>
+                            {msg.isCreator && <ShieldCheck className="w-3 h-3 text-amber-500" />}
+                            {msg.isAdmin && !msg.isCreator && <Crown className="w-3 h-3 text-red-500" />}
+                          </div>
+                        )}
+                        
+                        <div className={`p-3 relative ${
+                          isMe 
+                            ? 'bg-white border border-slate-100 text-slate-800 rounded-2xl rounded-br-sm shadow-sm' 
+                            : 'bg-pink-100 text-slate-800 rounded-2xl rounded-tl-sm'
+                        }`}>
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
                         </div>
                         
-                        <div className={`p-4 shadow-xl ${
-                          isMe 
-                            ? 'bg-gradient-to-br from-[#7C4DFF] to-[#3A86FF] text-white rounded-3xl rounded-tr-sm' 
-                            : 'bg-white/5 text-zinc-200 rounded-3xl rounded-tl-sm border border-white/10 backdrop-blur-md'
-                        }`}>
-                          <p className="text-sm leading-relaxed font-medium">{msg.text}</p>
-                        </div>
+                        <span className="text-[9px] text-slate-400 mt-1 mx-1">
+                          {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
+                        </span>
                       </div>
                     </div>
                   );
@@ -5338,21 +5153,21 @@ export default function App() {
             </div>
 
             {/* Input Area */}
-            <div className="fixed bottom-24 left-0 right-0 px-4 z-10 pointer-events-none">
-              <div className="max-w-md mx-auto bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-2 flex gap-2 items-center shadow-2xl pointer-events-auto">
-                <div className="flex-1 px-4 py-3">
+            <div className="bg-white p-4 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10">
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 bg-slate-100 rounded-full px-4 py-3 flex items-center">
                   <input 
                     type="text" 
                     placeholder="Написать сообщение..."
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-                    className="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-zinc-500 font-medium"
+                    className="bg-transparent border-none outline-none w-full text-sm text-slate-800 placeholder:text-slate-400"
                   />
                 </div>
                 <button 
                   onClick={sendChatMessage}
-                  className="w-12 h-12 rounded-[24px] bg-gradient-to-br from-[#7C4DFF] to-[#3A86FF] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
+                  className="w-11 h-11 rounded-full bg-pink-500 flex items-center justify-center text-white hover:bg-pink-600 transition-colors shadow-md shadow-pink-500/20 shrink-0"
                 >
                   <Send className="w-5 h-5 ml-0.5" />
                 </button>
@@ -6749,46 +6564,6 @@ export default function App() {
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Bottom Navigation */}
-        {isLoggedIn && hasCompletedOnboarding && [2, 3, 16, 19, 30].includes(page) && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-4 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/90 to-transparent pointer-events-none">
-            <div className="max-w-md mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex justify-between items-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] pointer-events-auto">
-              {[
-                { id: 2, icon: Home, label: "Home" },
-                { id: 30, icon: Users, label: "Guild" },
-                { id: 19, icon: MessageSquare, label: "Chat" },
-                { id: 3, icon: Backpack, label: "Inventory" },
-                { id: 16, icon: User, label: "Profile" }
-              ].map((item) => {
-                const isActive = page === item.id;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setPage(item.id)}
-                    className={`relative flex-1 py-3 flex flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-300 ${
-                      isActive ? 'text-[#7C4DFF]' : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="bottomNavGlow"
-                        className="absolute inset-0 bg-gradient-to-t from-[#7C4DFF]/20 to-transparent rounded-2xl shadow-[inset_0_-10px_20px_rgba(124,77,255,0.2)]"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    <Icon className={`w-6 h-6 relative z-10 ${isActive ? 'drop-shadow-[0_0_10px_rgba(124,77,255,0.8)]' : ''}`} />
-                    <span className={`text-[10px] font-bold relative z-10 ${isActive ? 'opacity-100 drop-shadow-[0_0_5px_rgba(124,77,255,0.5)]' : 'opacity-0 h-0 overflow-hidden'} transition-all duration-300`}>
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
             </div>
           </div>
         )}

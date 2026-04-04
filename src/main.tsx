@@ -1,6 +1,6 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './GameApp';
+import App from './GameApp.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
