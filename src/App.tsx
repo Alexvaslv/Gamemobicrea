@@ -13,6 +13,58 @@ import { io, Socket } from "socket.io-client";
 
 // --- Firestore Data Service ---
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string;
+    email?: string | null;
+    emailVerified?: boolean;
+    isAnonymous?: boolean;
+    tenantId?: string | null;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  toast.error("Ошибка базы данных: " + (error instanceof Error ? error.message : String(error)));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 const PLAYER_DATA_COLLECTION = "player_data";
 
 export async function savePlayerData(userId: string, data: any) {
@@ -107,58 +159,6 @@ async function testConnection() {
   }
 }
 testConnection();
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string;
-    email?: string | null;
-    emailVerified?: boolean;
-    isAnonymous?: boolean;
-    tenantId?: string | null;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  toast.error("Ошибка базы данных: " + (error instanceof Error ? error.message : String(error)));
-  throw new Error(JSON.stringify(errInfo));
-}
 
 interface Item {
   id: string;
@@ -589,20 +589,8 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        try {
-          const { signInAnonymously } = await import('firebase/auth');
-          await signInAnonymously(auth);
-          setAuthError(null);
-        } catch (error: any) {
-          console.error("Anonymous sign-in failed:", error);
-          setAuthError(error.code);
-          if (error.code === 'auth/admin-restricted-operation') {
-            toast.error("Firebase: Анонимная авторизация отключена. Пожалуйста, включите её в консоли Firebase.", {
-              duration: 10000,
-            });
-          }
-          setIsAuthReady(true);
-        }
+        // No user is signed in. We'll wait for the user to sign in with Google.
+        setIsAuthReady(true);
       } else {
         setAuthError(null);
         // Load player data from Firestore
@@ -3180,7 +3168,7 @@ export default function App() {
                     <div className="w-full h-1 bg-zinc-900/80 rounded-full mt-1 overflow-hidden">
                       <div 
                         className="h-full bg-lime-400" 
-                        style={{ width: `${(xp / XP_TABLE[currentLevel + 1]) * 100}%` }} 
+                        style={{ width: `${xpPercentage}%` }} 
                       />
                     </div>
                   </div>
