@@ -26,6 +26,63 @@ export async function savePlayerData(userId: string, data: any) {
   }
 }
 
+/**
+ * Standalone function to equip an item and save to Firestore.
+ * Adapted from user request to use Firestore instead of Realtime Database.
+ */
+export async function equipItemToFirestore(playerId: string, item: any, slot: string) {
+  try {
+    const playerDocRef = doc(db, PLAYER_DATA_COLLECTION, playerId);
+    const playerDoc = await getDoc(playerDocRef);
+    
+    if (playerDoc.exists()) {
+      const data = playerDoc.data();
+      const equippedItems = data.equippedItems || {};
+      const inventory = data.inventory || [];
+      
+      // Find item in inventory if not provided as full object
+      let itemToEquip = item;
+      let itemIdx = -1;
+      
+      if (typeof item === 'string') {
+        itemIdx = inventory.findIndex((i: any) => i.id === item);
+        if (itemIdx > -1) {
+          itemToEquip = inventory[itemIdx];
+        } else {
+          throw new Error("Item not found in inventory");
+        }
+      }
+
+      const oldItem = equippedItems[slot];
+      const newEquipped = { ...equippedItems, [slot]: itemToEquip };
+      const newInventory = [...inventory];
+      
+      if (itemIdx > -1) {
+        newInventory.splice(itemIdx, 1);
+      } else {
+        // If item was passed as object, we should still try to remove it from inventory by ID
+        const idx = newInventory.findIndex((i: any) => i.id === itemToEquip.id);
+        if (idx > -1) newInventory.splice(idx, 1);
+      }
+      
+      if (oldItem) {
+        newInventory.push(oldItem);
+      }
+
+      await setDoc(playerDocRef, {
+        equippedItems: newEquipped,
+        inventory: newInventory,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      
+      console.log("Вещь сохранена!");
+    }
+  } catch (error) {
+    console.error("Ошибка сохранения вещи:", error);
+    throw error;
+  }
+}
+
 export async function loadPlayerData(userId: string) {
   try {
     const docRef = doc(db, PLAYER_DATA_COLLECTION, userId);
@@ -130,9 +187,11 @@ interface Item {
   };
 }
 
-const EquipSlot = ({ label, item }: { label: string, item?: Item | null }) => (
+const EquipSlot = ({ label, item, onUnequip }: { label: string, item?: Item | null, onUnequip?: () => void }) => (
   <div className="flex flex-col items-center gap-1 group w-full">
-    <div className={`w-full aspect-square rounded-2xl relative transition-all duration-500 cursor-pointer overflow-hidden group-hover:scale-105 ${
+    <div 
+      onClick={() => item && onUnequip && onUnequip()}
+      className={`w-full aspect-square rounded-2xl relative transition-all duration-500 cursor-pointer overflow-hidden group-hover:scale-105 ${
       item ? (
         item.rarity === 'legendary' ? 'bg-gradient-to-br from-orange-900/40 to-orange-950/60 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.2),inset_0_0_10px_rgba(249,115,22,0.2)]' :
         item.rarity === 'epic' ? 'bg-gradient-to-br from-purple-900/40 to-purple-950/60 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.2),inset_0_0_10px_rgba(168,85,247,0.2)]' :
@@ -404,6 +463,17 @@ export default function App() {
     setSelectedItemIdx(null);
 
     toast.success(`Вы экипировали ${item.name}.`);
+  };
+
+  const unequipItem = (slot: string) => {
+    const item = equippedItems[slot];
+    if (!item) return;
+
+    const newEquipped = { ...equippedItems, [slot]: null };
+    setEquippedItems(newEquipped);
+
+    setInventory(prev => [...prev, item]);
+    toast.success(`Вы сняли ${item.name}.`);
   };
 
   const buyItem = (shopItem: any) => {
@@ -3039,11 +3109,11 @@ export default function App() {
             <div className="character mt-4">
               {/* Left Column */}
               <div className="flex flex-col justify-between h-full" style={{ gridColumn: 1, gridRow: '1 / span 3' }}>
-                <EquipSlot label="Шлем" item={equippedItems["Шлем"]} />
-                <EquipSlot label="Наручи" item={equippedItems["Наручи"]} />
-                <EquipSlot label="Меч" item={equippedItems["Меч"]} />
-                <EquipSlot label="Штаны" item={equippedItems["Штаны"]} />
-                <EquipSlot label="Сапоги" item={equippedItems["Сапоги"]} />
+                <EquipSlot label="Шлем" item={equippedItems["Шлем"]} onUnequip={() => unequipItem("Шлем")} />
+                <EquipSlot label="Наручи" item={equippedItems["Наручи"]} onUnequip={() => unequipItem("Наручи")} />
+                <EquipSlot label="Меч" item={equippedItems["Меч"]} onUnequip={() => unequipItem("Меч")} />
+                <EquipSlot label="Штаны" item={equippedItems["Штаны"]} onUnequip={() => unequipItem("Штаны")} />
+                <EquipSlot label="Сапоги" item={equippedItems["Сапоги"]} onUnequip={() => unequipItem("Сапоги")} />
               </div>
 
               {/* Center Silhouette */}
@@ -3113,11 +3183,11 @@ export default function App() {
 
               {/* Right Column */}
               <div className="flex flex-col justify-between h-full" style={{ gridColumn: 3, gridRow: '1 / span 3' }}>
-                <EquipSlot label="Ожерелье" item={equippedItems["Ожерелье"]} />
-                <EquipSlot label="Перчатки" item={equippedItems["Перчатки"]} />
-                <EquipSlot label="Второе оружие" item={equippedItems["Второе оружие"]} />
-                <EquipSlot label="Рубашка" item={equippedItems["Рубашка"]} />
-                <EquipSlot label="Пояс" item={equippedItems["Пояс"]} />
+                <EquipSlot label="Ожерелье" item={equippedItems["Ожерелье"]} onUnequip={() => unequipItem("Ожерелье")} />
+                <EquipSlot label="Перчатки" item={equippedItems["Перчатки"]} onUnequip={() => unequipItem("Перчатки")} />
+                <EquipSlot label="Второе оружие" item={equippedItems["Второе оружие"]} onUnequip={() => unequipItem("Второе оружие")} />
+                <EquipSlot label="Рубашка" item={equippedItems["Рубашка"]} onUnequip={() => unequipItem("Рубашка")} />
+                <EquipSlot label="Пояс" item={equippedItems["Пояс"]} onUnequip={() => unequipItem("Пояс")} />
               </div>
             </div>
 
