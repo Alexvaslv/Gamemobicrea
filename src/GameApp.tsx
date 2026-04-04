@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Home, User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
+import { Home, User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
@@ -180,6 +180,7 @@ interface Item {
   spell_power?: number;
   cooldown_reduction?: number;
   isChest?: boolean;
+  count?: number;
   chestRewards?: {
     iron?: number;
     silver?: number;
@@ -559,7 +560,7 @@ export default function App() {
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [silver, setSilver] = useState(() => parseInt(localStorage.getItem("rpg_silver") || "0", 10) || 0);
   const [playerName, setPlayerName] = useState(() => localStorage.getItem("rpg_player_name") || "Герой");
-  const [chatMessages, setChatMessages] = useState<{id: string, sender: string, text: string, timestamp: any, avatarUrl?: string}[]>([]);
+  const [chatMessages, setChatMessages] = useState<{id: string, sender: string, text: string, timestamp: any, avatarUrl?: string, isCreator?: boolean, isAdmin?: boolean}[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [news, setNews] = useState<{id: string, title: string, content: string, date: string}[]>([]);
   const [forumPosts, setForumPosts] = useState<{id: string, title: string, author: string, content: string, timestamp: any, replies: number}[]>([]);
@@ -948,11 +949,11 @@ export default function App() {
     const saved = localStorage.getItem("rpg_inventory");
     return saved ? JSON.parse(saved) : [];
   });
-  const [booksInventory, setBooksInventory] = useState<string[]>(() => {
+  const [booksInventory, setBooksInventory] = useState<Item[]>(() => {
     const saved = localStorage.getItem("rpg_books_inventory");
     return saved ? JSON.parse(saved) : [];
   });
-  const [elixirsInventory, setElixirsInventory] = useState<string[]>(() => {
+  const [elixirsInventory, setElixirsInventory] = useState<Item[]>(() => {
     const saved = localStorage.getItem("rpg_elixirs_inventory");
     return saved ? JSON.parse(saved) : [];
   });
@@ -1067,7 +1068,7 @@ export default function App() {
     wisdom: 0
   });
   const [adminResourceAmount, setAdminResourceAmount] = useState<number>(100);
-  const [messages, setMessages] = useState<{id: number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean}, claimed?: boolean}[]>(() => {
+  const [messages, setMessages] = useState<{id: string | number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean}, claimed?: boolean}[]>(() => {
     const saved = localStorage.getItem("rpg_messages");
     return saved ? JSON.parse(saved) : [];
   });
@@ -1924,12 +1925,12 @@ export default function App() {
     if (Math.random() < 0.03) {
       const books = ["Книга силы новичка", "Книга ловкости новичка", "Книга мудрости новичка"];
       const book = books[Math.floor(Math.random() * books.length)];
-      setBooksInventory(prev => [...prev].slice(0, 9).concat(book));
+      setBooksInventory(prev => [...prev].slice(0, 9).concat(generateItem(book, 1)));
     }
     if (Math.random() < 0.08) {
       const elixirs = ["Малое зелье здоровья", "Малое зелье маны", "Эликсир силы"];
       const elixir = elixirs[Math.floor(Math.random() * elixirs.length)];
-      setElixirsInventory(prev => [...prev].slice(0, 9).concat(elixir));
+      setElixirsInventory(prev => [...prev].slice(0, 9).concat(generateItem(elixir, 1)));
     }
 
     setLastDrops(finalDrops.map(d => d.name));
@@ -2965,25 +2966,36 @@ export default function App() {
               </div>
 
               {/* Action Buttons Row */}
-              <div className="w-full max-w-md flex items-center justify-center gap-4 mb-6 px-4">
+              <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-6 px-4">
+                <button 
+                  onClick={() => setPage(30)}
+                  className="py-4 bg-gradient-to-br from-[#7C4DFF]/20 to-[#3A86FF]/10 border border-white/10 rounded-3xl text-white hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2 shadow-lg group"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="w-6 h-6 text-[#7C4DFF]" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-widest">Коллаборация</span>
+                </button>
                 <button 
                   onClick={() => setPage(29)}
-                  className="flex-1 py-3 bg-white/5 border border-white/10 rounded-2xl text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                  className="py-4 bg-white/5 border border-white/10 rounded-3xl text-zinc-300 hover:text-white hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2 shadow-lg group"
                 >
-                  <Users className="w-5 h-5 text-[#3A86FF]" />
-                  <span className="text-xs font-bold">Игроки ({onlineUsers.size})</span>
-                </button>
-                <button onClick={() => setPage(11)} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-zinc-300 hover:text-white hover:bg-white/10 transition-all">
-                  <Settings className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Swords className="w-6 h-6 text-[#3A86FF]" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-widest">Игроки ({onlineUsers.size})</span>
                 </button>
               </div>
 
             {/* Global News Ticker */}
             {globalEvents.length > 0 && (
-              <div className="w-full max-w-md mb-6 bg-lime-400/5 border border-lime-400/10 rounded-2xl py-2 px-4 overflow-hidden relative">
-                <div className="flex items-center gap-3 animate-marquee whitespace-nowrap">
-                  <span className="text-[10px] font-bold text-lime-400 uppercase tracking-widest flex-shrink-0">События:</span>
-                  <p className="text-[10px] text-zinc-300">
+              <div className="w-full max-w-md mb-6 bg-white/5 border border-white/10 rounded-3xl py-3 px-5 overflow-hidden relative shadow-inner">
+                <div className="flex items-center gap-4 animate-marquee whitespace-nowrap">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Live:</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-medium">
                     {globalEvents[0].message}
                   </p>
                 </div>
@@ -2992,22 +3004,22 @@ export default function App() {
 
             {/* Currency Cards */}
             <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-8 px-4">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 flex items-center gap-4 shadow-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">
-                  <Coins className="w-5 h-5 text-zinc-300" />
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow-xl hover:bg-white/10 transition-colors cursor-pointer group">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
+                  <Coins className="w-6 h-6 text-amber-400" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Серебро</span>
-                  <span className="text-xl font-black text-white">{silver}</span>
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-black">Серебро</span>
+                  <span className="text-lg font-black text-white tracking-tight">{silver.toLocaleString()}</span>
                 </div>
               </div>
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 flex items-center gap-4 shadow-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">
-                  <Gem className="w-5 h-5 text-[#3A86FF]" />
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow-xl hover:bg-white/10 transition-colors cursor-pointer group">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
+                  <Gem className="w-6 h-6 text-blue-400" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Золото</span>
-                  <span className="text-xl font-black text-white">{gold}</span>
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.15em] font-black">Алмазы</span>
+                  <span className="text-lg font-black text-white tracking-tight">{diamonds.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -3358,7 +3370,7 @@ export default function App() {
             <div className="flex justify-between items-center gap-1 mt-4 bg-white/5 border border-white/5 rounded-2xl p-2 w-full">
               <div className="flex-1 flex items-center gap-2 pl-1">
                 <div className={`w-7 h-7 rounded-lg ${playerGender === 'male' ? 'bg-blue-500/10' : 'bg-pink-500/10'} flex items-center justify-center shrink-0`}>
-                  {playerGender === 'male' ? <Mars className="w-3.5 h-3.5 text-blue-400" /> : <Venus className="w-3.5 h-3.5 text-pink-400" />}
+                  {playerGender === 'male' ? <Circle className="w-3.5 h-3.5 text-blue-400" /> : <Circle className="w-3.5 h-3.5 text-pink-400" />}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Пол</span>
@@ -3429,11 +3441,11 @@ export default function App() {
                         </div>
                       )}
                       {[
-                        { label: "Сила", base: 10 + spentStrength, gear: gearBonuses.strength, elixir: elixirBonuses.strength, setter: setSpentStrength, spent: spentStrength, key: 'strength', color: 'text-red-400' },
-                        { label: "Ловкость", base: 10 + spentAgility, gear: gearBonuses.agility, elixir: elixirBonuses.agility, setter: setSpentAgility, spent: spentAgility, key: 'agility', color: 'text-blue-400' },
-                        { label: "Интуиция", base: 10 + spentIntuition, gear: gearBonuses.intuition, elixir: elixirBonuses.intuition, setter: setSpentIntuition, spent: spentIntuition, key: 'intuition', color: 'text-purple-400' },
-                        { label: "Выносливость", base: 10 + spentEndurance, gear: gearBonuses.endurance, elixir: elixirBonuses.endurance, setter: setSpentEndurance, spent: spentEndurance, key: 'endurance', color: 'text-green-400' },
-                        { label: "Мудрость", base: 10 + spentWisdom, gear: gearBonuses.wisdom, elixir: elixirBonuses.wisdom, setter: setSpentWisdom, spent: spentWisdom, key: 'wisdom', color: 'text-cyan-400' },
+                        { label: "Сила", base: 10 + spentStrength, gear: gearBonuses.bonuses.strength, elixir: elixirBonuses.strength, setter: setSpentStrength, spent: spentStrength, key: 'strength', color: 'text-red-400' },
+                        { label: "Ловкость", base: 10 + spentAgility, gear: gearBonuses.bonuses.agility, elixir: elixirBonuses.agility, setter: setSpentAgility, spent: spentAgility, key: 'agility', color: 'text-blue-400' },
+                        { label: "Интуиция", base: 10 + spentIntuition, gear: gearBonuses.bonuses.intuition, elixir: elixirBonuses.intuition, setter: setSpentIntuition, spent: spentIntuition, key: 'intuition', color: 'text-purple-400' },
+                        { label: "Выносливость", base: 10 + spentEndurance, gear: gearBonuses.bonuses.endurance, elixir: elixirBonuses.endurance, setter: setSpentEndurance, spent: spentEndurance, key: 'endurance', color: 'text-green-400' },
+                        { label: "Мудрость", base: 10 + spentWisdom, gear: gearBonuses.bonuses.wisdom, elixir: elixirBonuses.wisdom, setter: setSpentWisdom, spent: spentWisdom, key: 'wisdom', color: 'text-cyan-400' },
                       ].map((stat, idx) => {
                         const pending = pendingStats[stat.key as keyof typeof pendingStats];
                         const total = stat.base + pending + stat.gear + stat.elixir;
@@ -5129,6 +5141,125 @@ export default function App() {
           </motion.div>
         )}
 
+        {page === 30 && (
+          <motion.div
+            key="page30"
+            className="min-h-[100dvh] flex flex-col bg-[#0D0D0F] text-zinc-100 w-full max-w-md mx-auto p-6 pb-24 relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {/* Background Accents */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#7C4DFF]/10 blur-[100px] rounded-full -mr-32 -mt-32" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#3A86FF]/10 blur-[100px] rounded-full -ml-32 -mb-32" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div>
+                <h2 className="text-3xl font-black tracking-tight text-white">Коллаборация</h2>
+                <p className="text-zinc-500 text-xs font-medium">Управление гильдией и проектами</p>
+              </div>
+              <button onClick={() => setPage(2)} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors shadow-lg">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative mb-8 z-10">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+              <input 
+                type="text" 
+                placeholder="Поиск проектов или игроков..." 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#7C4DFF]/50 transition-colors shadow-inner"
+              />
+            </div>
+
+            {/* Active Projects (Quests) */}
+            <div className="mb-8 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white tracking-tight">Активные квесты</h3>
+                <button className="text-xs font-bold text-[#7C4DFF] hover:underline">Все</button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+                {[
+                  { id: 1, title: "Осада крепости", progress: 65, color: "#7C4DFF", members: 4 },
+                  { id: 2, title: "Сбор ресурсов", progress: 30, color: "#3A86FF", members: 2 },
+                  { id: 3, title: "Разведка", progress: 90, color: "#00E676", members: 1 }
+                ].map((project) => (
+                  <div key={project.id} className="min-w-[240px] snap-start bg-white/5 border border-white/10 rounded-3xl p-5 shadow-xl hover:bg-white/10 transition-all group">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                        <ScrollText className="w-6 h-6" style={{ color: project.color }} />
+                      </div>
+                      <div className="flex -space-x-2">
+                        {[...Array(project.members)].map((_, i) => (
+                          <div key={i} className="w-7 h-7 rounded-full border-2 border-[#0D0D0F] bg-zinc-800 overflow-hidden shadow-md">
+                            <img src={`https://i.pravatar.cc/100?u=${project.id + i}`} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-white mb-4 group-hover:text-[#7C4DFF] transition-colors">{project.title}</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                        <span>Прогресс</span>
+                        <span style={{ color: project.color }}>{project.progress}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                        <motion.div 
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: project.color, width: `${project.progress}%` }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${project.progress}%` }}
+                          transition={{ duration: 1.5, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Team Members */}
+            <div className="mb-8 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white tracking-tight">Участники гильдии</h3>
+                <button className="text-xs font-bold text-[#7C4DFF] hover:underline">Пригласить</button>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: "ShadowHunter", role: "Лидер", status: "online" },
+                  { name: "CyberMage", role: "Офицер", status: "online" },
+                  { name: "NeonKnight", role: "Участник", status: "offline" }
+                ].map((member, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-3xl shadow-lg hover:bg-white/10 transition-colors group cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-2xl bg-zinc-800 overflow-hidden border border-white/5 shadow-inner">
+                          <img src={`https://i.pravatar.cc/100?u=${member.name}`} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-[#0D0D0F] ${member.status === 'online' ? 'bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.6)]' : 'bg-zinc-600'}`} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-[#7C4DFF] transition-colors">{member.name}</h4>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{member.role}</p>
+                      </div>
+                    </div>
+                    <button className="p-2 text-zinc-500 hover:text-white transition-colors">
+                      <MessageSquare className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Action */}
+            <button className="w-full py-5 bg-gradient-to-r from-[#7C4DFF] to-[#3A86FF] rounded-3xl text-white font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(124,77,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all relative z-10">
+              Создать новый проект
+            </button>
+          </motion.div>
+        )}
+
         {page === 19 && (
           <motion.div
             key="page19"
@@ -5160,49 +5291,45 @@ export default function App() {
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar pb-24">
-              <div className="text-center my-2">
-                <span className="text-[10px] font-medium text-zinc-500 bg-white/5 border border-white/10 px-3 py-1 rounded-full">Сегодня</span>
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar pb-32">
+              <div className="flex justify-center mb-2">
+                <span className="text-[10px] font-black text-zinc-500 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full uppercase tracking-widest">Сегодня</span>
               </div>
               
               {chatMessages.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
-                  Сообщений пока нет...
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 gap-4">
+                  <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center">
+                    <MessageSquare className="w-8 h-8 opacity-20" />
+                  </div>
+                  <p className="text-sm font-medium">Сообщений пока нет...</p>
                 </div>
               ) : (
                 chatMessages.map((msg) => {
                   const isMe = msg.sender === playerName;
                   
                   return (
-                    <div key={msg.id} className={`flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      {!isMe && (
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex-shrink-0 overflow-hidden mt-auto border border-white/10">
-                          <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        </div>
-                      )}
+                    <div key={msg.id} className={`flex gap-3 w-full ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex-shrink-0 overflow-hidden border border-white/10 shadow-lg">
+                        <img src={msg.avatarUrl || `https://i.pravatar.cc/100?u=${msg.sender}`} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
                       
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                        {!isMe && (
-                          <div className="flex items-center gap-1 mb-1 ml-1">
-                            <span className={`text-[10px] font-bold ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-zinc-400'}`}>
-                              {msg.sender}
-                            </span>
-                            {msg.isCreator && <ShieldCheck className="w-3 h-3 text-amber-500" />}
-                            {msg.isAdmin && !msg.isCreator && <Crown className="w-3 h-3 text-red-500" />}
-                          </div>
-                        )}
-                        
-                        <div className={`p-3 relative ${
-                          isMe 
-                            ? 'bg-gradient-to-r from-[#3A86FF] to-[#7C4DFF] text-white rounded-2xl rounded-br-sm shadow-[0_4px_15px_rgba(58,134,255,0.3)]' 
-                            : 'bg-[#1E1E24] text-zinc-200 rounded-2xl rounded-tl-sm border border-white/5'
-                        }`}>
-                          <p className="text-sm leading-relaxed">{msg.text}</p>
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                        <div className="flex items-center gap-2 mb-1.5 px-1">
+                          <span className={`text-[11px] font-black uppercase tracking-tight ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-zinc-400'}`}>
+                            {msg.sender}
+                          </span>
+                          <span className="text-[9px] text-zinc-600 font-medium">
+                            {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
+                          </span>
                         </div>
                         
-                        <span className="text-[9px] text-zinc-500 mt-1 mx-1">
-                          {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
-                        </span>
+                        <div className={`p-4 shadow-xl ${
+                          isMe 
+                            ? 'bg-gradient-to-br from-[#7C4DFF] to-[#3A86FF] text-white rounded-3xl rounded-tr-sm' 
+                            : 'bg-white/5 text-zinc-200 rounded-3xl rounded-tl-sm border border-white/10 backdrop-blur-md'
+                        }`}>
+                          <p className="text-sm leading-relaxed font-medium">{msg.text}</p>
+                        </div>
                       </div>
                     </div>
                   );
@@ -5211,21 +5338,21 @@ export default function App() {
             </div>
 
             {/* Input Area */}
-            <div className="fixed bottom-0 left-0 right-0 bg-[#0D0D0F]/90 backdrop-blur-md p-4 border-t border-white/10 z-10">
-              <div className="max-w-md mx-auto flex gap-2 items-center">
-                <div className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-3 flex items-center">
+            <div className="fixed bottom-24 left-0 right-0 px-4 z-10 pointer-events-none">
+              <div className="max-w-md mx-auto bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-2 flex gap-2 items-center shadow-2xl pointer-events-auto">
+                <div className="flex-1 px-4 py-3">
                   <input 
                     type="text" 
                     placeholder="Написать сообщение..."
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-                    className="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-zinc-500"
+                    className="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-zinc-500 font-medium"
                   />
                 </div>
                 <button 
                   onClick={sendChatMessage}
-                  className="w-11 h-11 rounded-full bg-gradient-to-r from-[#3A86FF] to-[#7C4DFF] flex items-center justify-center text-white hover:brightness-110 transition-all shadow-[0_0_15px_rgba(124,77,255,0.5)] shrink-0"
+                  className="w-12 h-12 rounded-[24px] bg-gradient-to-br from-[#7C4DFF] to-[#3A86FF] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all shadow-lg shrink-0"
                 >
                   <Send className="w-5 h-5 ml-0.5" />
                 </button>
@@ -6627,11 +6754,12 @@ export default function App() {
         )}
 
         {/* Bottom Navigation */}
-        {isLoggedIn && hasCompletedOnboarding && [2, 3, 16, 19].includes(page) && (
+        {isLoggedIn && hasCompletedOnboarding && [2, 3, 16, 19, 30].includes(page) && (
           <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-4 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/90 to-transparent pointer-events-none">
             <div className="max-w-md mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex justify-between items-center shadow-[0_8px_32px_rgba(0,0,0,0.5)] pointer-events-auto">
               {[
                 { id: 2, icon: Home, label: "Home" },
+                { id: 30, icon: Users, label: "Guild" },
                 { id: 19, icon: MessageSquare, label: "Chat" },
                 { id: 3, icon: Backpack, label: "Inventory" },
                 { id: 16, icon: User, label: "Profile" }
