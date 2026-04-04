@@ -1215,6 +1215,7 @@ export default function App() {
 
   const isAdmin = useMemo(() => {
     return auth.currentUser?.email === 'svksinel@gmail.com' || 
+           auth.currentUser?.email === 'alexeivasilev27081994@gmail.com' ||
            playerName === 'Murr' || 
            playerName === 'admin' || 
            userRoles.includes('admin');
@@ -1222,6 +1223,7 @@ export default function App() {
 
   const isCreator = useMemo(() => {
     return auth.currentUser?.email === 'svksinel@gmail.com' || 
+           auth.currentUser?.email === 'alexeivasilev27081994@gmail.com' ||
            playerName === 'Murr' || 
            userRoles.includes('creator');
   }, [auth.currentUser, playerName, userRoles]);
