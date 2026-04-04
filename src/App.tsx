@@ -299,38 +299,38 @@ const SHOP_ITEMS: Record<string, any[]> = {
     { id: 'amu_100', name: 'Легендарный артефакт', level: 30, rarity: 'legendary', type: 'Ожерелье', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 15, agility: 15, intuition: 15, endurance: 15, wisdom: 15 } },
   ],
   elixirs: [
-    { id: 'elx_61', name: 'Зелье здоровья', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Восстанавливает HP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_62', name: 'Зелье маны', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Восстанавливает MP', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_63', name: 'Малое зелье силы', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус силы', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_64', name: 'Зелье скорости', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус скорости', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_65', name: 'Зелье защиты', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Временный бонус защиты', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_66', name: 'Эликсир огня', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон огнем', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_67', name: 'Эликсир льда', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон льдом', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_68', name: 'Эликсир молнии', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Урон молнией', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_69', name: 'Ядовитое зелье', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Урон ядом', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_70', name: 'Тёмный эликсир', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Темная магия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_71', name: 'Светлый эликсир', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Светлая магия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_72', name: 'Эликсир ярости', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Ярость', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_73', name: 'Эликсир невидимости', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Невидимость', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_74', name: 'Эликсир удачи', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Удача', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_75', name: 'Эликсир опыта', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Опыт', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_76', name: 'Эликсир регенерации', level: 5, rarity: 'uncommon', type: 'elixir', cost: 150, currency: 'silver', description: 'Регенерация', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_77', name: 'Эликсир энергии', level: 10, rarity: 'rare', type: 'elixir', cost: 500, currency: 'silver', description: 'Энергия', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_78', name: 'Эликсир берсерка', level: 20, rarity: 'epic', type: 'elixir', cost: 2500, currency: 'silver', description: 'Берсерк', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_79', name: 'Легендарный эликсир', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Легендарный эффект', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'elx_80', name: 'Эликсир бессмертия', level: 30, rarity: 'legendary', type: 'elixir', cost: 10000, currency: 'silver', description: 'Бессмертие', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_61', name: 'Малое зелье здоровья', level: 1, rarity: 'common', type: 'Эликсир', cost: 50, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_62', name: 'Среднее зелье здоровья', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 150, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_63', name: 'Большое зелье здоровья', level: 10, rarity: 'rare', type: 'Эликсир', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_64', name: 'Эликсир жизни', level: 20, rarity: 'epic', type: 'Эликсир', cost: 2500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_65', name: 'Малое зелье маны', level: 1, rarity: 'common', type: 'Эликсир', cost: 50, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_66', name: 'Среднее зелье маны', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 150, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_67', name: 'Большое зелье маны', level: 10, rarity: 'rare', type: 'Эликсир', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_68', name: 'Эликсир маны', level: 20, rarity: 'epic', type: 'Эликсир', cost: 2500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_69', name: 'Зелье силы', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 300, currency: 'silver', bonusPercent: 0, stats: { strength: 5, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_70', name: 'Зелье ловкости', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 300, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 5, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_71', name: 'Зелье выносливости', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 300, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 5, wisdom: 0 } },
+    { id: 'pot_72', name: 'Зелье мудрости', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 300, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 5 } },
+    { id: 'pot_73', name: 'Зелье удачи', level: 10, rarity: 'rare', type: 'Эликсир', cost: 1000, currency: 'silver', bonusPercent: 0, stats: { strength: 2, agility: 2, intuition: 2, endurance: 2, wisdom: 2 } },
+    { id: 'pot_74', name: 'Зелье невидимости', level: 10, rarity: 'rare', type: 'Эликсир', cost: 1000, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 10, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_75', name: 'Зелье каменной кожи', level: 10, rarity: 'rare', type: 'Эликсир', cost: 1000, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 10, wisdom: 0 } },
+    { id: 'pot_76', name: 'Зелье ярости', level: 10, rarity: 'rare', type: 'Эликсир', cost: 1000, currency: 'silver', bonusPercent: 0, stats: { strength: 10, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_77', name: 'Эликсир бессмертия', level: 30, rarity: 'legendary', type: 'Эликсир', cost: 20000, currency: 'silver', bonusPercent: 0, stats: { strength: 5, agility: 5, intuition: 5, endurance: 50, wisdom: 5 } },
+    { id: 'pot_78', name: 'Эликсир богов', level: 30, rarity: 'legendary', type: 'Эликсир', cost: 20000, currency: 'silver', bonusPercent: 0, stats: { strength: 15, agility: 15, intuition: 15, endurance: 15, wisdom: 15 } },
+    { id: 'pot_79', name: 'Зелье очищения', level: 5, rarity: 'uncommon', type: 'Эликсир', cost: 300, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'pot_80', name: 'Зелье опыта', level: 10, rarity: 'rare', type: 'Эликсир', cost: 1000, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
   ],
   books: [
-    { id: 'bk_81', name: 'Книга силы', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_82', name: 'Книга ловкости', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_83', name: 'Книга интеллекта', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_84', name: 'Книга защиты', level: 5, rarity: 'uncommon', type: 'book', cost: 600, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_85', name: 'Книга магии', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_86', name: 'Книга огня', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_87', name: 'Книга льда', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_88', name: 'Книга молнии', level: 10, rarity: 'rare', type: 'book', cost: 2000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_89', name: 'Тёмный гримуар', level: 20, rarity: 'epic', type: 'book', cost: 10000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'bk_90', name: 'Священная книга', level: 30, rarity: 'legendary', type: 'book', cost: 40000, currency: 'silver', description: 'Навсегда увеличивает характеристики', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bok_81', name: 'Книга силы', level: 5, rarity: 'uncommon', type: 'Книга', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 1, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bok_82', name: 'Книга ловкости', level: 5, rarity: 'uncommon', type: 'Книга', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'bok_83', name: 'Книга интуиции', level: 5, rarity: 'uncommon', type: 'Книга', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 1, endurance: 0, wisdom: 0 } },
+    { id: 'bok_84', name: 'Книга выносливости', level: 5, rarity: 'uncommon', type: 'Книга', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 1, wisdom: 0 } },
+    { id: 'bok_85', name: 'Книга мудрости', level: 5, rarity: 'uncommon', type: 'Книга', cost: 500, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 1 } },
+    { id: 'bok_86', name: 'Древний свиток', level: 10, rarity: 'rare', type: 'Книга', cost: 2000, currency: 'silver', bonusPercent: 0, stats: { strength: 2, agility: 2, intuition: 2, endurance: 2, wisdom: 2 } },
+    { id: 'bok_87', name: 'Свиток знаний', level: 10, rarity: 'rare', type: 'Книга', cost: 2000, currency: 'silver', bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 5 } },
+    { id: 'bok_88', name: 'Гримуар теней', level: 20, rarity: 'epic', type: 'Книга', cost: 10000, currency: 'silver', bonusPercent: 0, stats: { strength: 5, agility: 5, intuition: 5, endurance: 5, wisdom: 5 } },
+    { id: 'bok_89', name: 'Фолиант света', level: 20, rarity: 'epic', type: 'Книга', cost: 10000, currency: 'silver', bonusPercent: 0, stats: { strength: 5, agility: 5, intuition: 5, endurance: 5, wisdom: 5 } },
+    { id: 'bok_90', name: 'Легендарная книга навыков', level: 30, rarity: 'legendary', type: 'Книга', cost: 50000, currency: 'silver', bonusPercent: 0, stats: { strength: 10, agility: 10, intuition: 10, endurance: 10, wisdom: 10 } },
   ],
   chests: [
     { id: 'shop_chest_iron', name: 'Железный Сундук', level: 1, rarity: 'common', type: 'chest', cost: 10, currency: 'diamonds', description: 'Содержит случайные ресурсы и предметы', isChest: true, bonusPercent: 0, stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
@@ -4880,7 +4880,7 @@ export default function App() {
                 </button>
               </div>
 
-              {playerEmail === "alexeivasilev27081994@gmail.com" && (
+              {(playerEmail === "alexeivasilev27081994@gmail.com" || playerEmail === "rdischat@gmail.com") && (
                 <div className="p-4 bg-red-900/10 border border-red-500/20 rounded-3xl space-y-4">
                   <h4 className="text-red-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                     <Shield className="w-4 h-4" /> Панель Администратора
@@ -5677,6 +5677,19 @@ export default function App() {
                       if (tempBirthday && !bdayRegex.test(tempBirthday)) {
                         toast.error("Дата рождения должна быть в формате ДД.ММ.ГГГГ");
                         return;
+                      }
+
+                      // Calculate age from birthday
+                      let newAge = playerAge;
+                      if (tempBirthday && bdayRegex.test(tempBirthday)) {
+                        const [day, month, year] = tempBirthday.split('.').map(Number);
+                        const birthDate = new Date(year, month - 1, day);
+                        const today = new Date();
+                        newAge = today.getFullYear() - birthDate.getFullYear();
+                        const m = today.getMonth() - birthDate.getMonth();
+                        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                          newAge--;
+                        }
                       }
 
                       let finalUsername = playerName;
