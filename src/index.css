@@ -1,29 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&family=Orbitron:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @layer components {
   .btn-primary {
-    @apply px-8 py-4 bg-amber-700 text-amber-50 font-bold uppercase tracking-widest rounded-none hover:bg-amber-600 transition-all duration-300 active:scale-95 shadow-[0_0_15px_rgba(217,119,6,0.4)] border-2 border-amber-500/50;
+    @apply px-8 py-4 bg-cyan-900/40 text-cyan-100 font-bold uppercase tracking-widest rounded-none hover:bg-cyan-800 transition-all duration-300 active:scale-95 shadow-[0_0_15px_rgba(34,211,238,0.4)] border-2 border-cyan-500/50;
   }
   .btn-secondary {
-    @apply px-8 py-4 bg-zinc-900/90 border-2 border-amber-900/50 text-amber-100 font-semibold rounded-none hover:bg-zinc-800 transition-all duration-300 active:scale-95;
+    @apply px-8 py-4 bg-zinc-900/90 border-2 border-zinc-700/50 text-zinc-300 font-semibold rounded-none hover:bg-zinc-800 transition-all duration-300 active:scale-95;
   }
   .glass-card {
-    @apply bg-zinc-950/90 border-2 border-amber-900/40 rounded-none overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)] relative;
+    @apply bg-zinc-950/90 border-2 border-cyan-900/40 rounded-none overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)] relative;
   }
-  /* Parchment style for dialogues/important info */
+  /* Holographic style for dialogues/important info */
   .parchment {
-    @apply bg-[#e5d3b3] text-zinc-900 border-4 border-[#8b7355] rounded-none shadow-[inset_0_0_50px_rgba(0,0,0,0.1)];
-    background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
+    @apply bg-zinc-950/95 text-cyan-100 border-2 border-cyan-500/50 rounded-none shadow-[0_0_30px_rgba(34,211,238,0.2)];
+    background-image: linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
   .glass-nav {
-    @apply bg-zinc-950/95 border-t-2 border-amber-900/50 backdrop-blur-xl;
+    @apply bg-zinc-950/95 border-t-2 border-cyan-900/50 backdrop-blur-xl;
   }
 }
 
 @theme {
   --font-display: "Cinzel", serif;
   --font-sans: "Inter", sans-serif;
+  --font-tech: "Orbitron", sans-serif;
   --animate-marquee: marquee 20s linear infinite;
 
   @keyframes marquee {
@@ -37,8 +39,8 @@ body {
   min-height: 100vh;
   background-color: #09090B; /* zinc-950 */
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(180, 83, 9, 0.15), transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(120, 53, 15, 0.15), transparent 50%);
+    radial-gradient(circle at 15% 50%, rgba(21, 94, 117, 0.2), transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(120, 53, 15, 0.1), transparent 50%);
   background-attachment: fixed;
   color: #E4E4E7; /* zinc-200 */
   font-family: "Inter", sans-serif;
@@ -53,12 +55,12 @@ body {
   background: #09090B;
 }
 ::-webkit-scrollbar-thumb {
-  background: #451a03; /* amber-900 */
+  background: #155e75; /* cyan-800 */
   border-radius: 0;
-  border: 1px solid #78350f;
+  border: 1px solid #083344;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #78350f; /* amber-800 */
+  background: #083344; /* cyan-900 */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -86,7 +88,8 @@ body {
   overflow: hidden;
   background: #09090B;
   border-radius: 0;
-  border: 2px solid rgba(217, 119, 6, 0.5);
+  border: 2px solid rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
 }
 
 /* КАРТИНКА ВНУТРИ */
