@@ -682,6 +682,7 @@ export default function App() {
   // Ref to prevent sync loops
   const isSyncingFromServer = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [friends, setFriends] = useState<{uid?: string, nickname: string, status?: string}[]>(() => {
     const saved = localStorage.getItem("rpg_player_friends");
     return saved ? JSON.parse(saved) : [];
@@ -705,6 +706,19 @@ export default function App() {
     localStorage.setItem("rpg_is_logged_in", isLoggedIn.toString());
   }, [isLoggedIn]);
 
+
+  const [xp, setXp] = useState(() => parseInt(localStorage.getItem("rpg_xp") || "100"));
+  const currentLevel = useMemo(() => {
+    let level = 1;
+    for (let i = 1; i <= 85; i++) {
+      if (xp >= XP_TABLE[i]) {
+        level = i;
+      } else {
+        break;
+      }
+    }
+    return level;
+  }, [xp]);
 
   const [onlineUserProfiles, setOnlineUserProfiles] = useState<Record<string, any>>({});
 
@@ -943,7 +957,6 @@ export default function App() {
     };
   });
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
-  const [xp, setXp] = useState(() => parseInt(localStorage.getItem("rpg_xp") || "100"));
   const [lastXpGained, setLastXpGained] = useState(0);
   const [forestProgress, setForestProgress] = useState(() => parseInt(localStorage.getItem("rpg_forest_progress") || "0"));
   const [mountainProgress, setMountainProgress] = useState(() => parseInt(localStorage.getItem("rpg_mountain_progress") || "0"));
@@ -1042,30 +1055,6 @@ export default function App() {
   const [prevLevel, setPrevLevel] = useState(() => parseInt(localStorage.getItem("rpg_prev_level") || "1"));
 
   // Global announcements for level-ups and items
-  useEffect(() => {
-    if (socket && isLoggedIn && playerName) {
-      if (prevLevel > 1 && lastLevelMessageSent.current !== undefined && prevLevel > lastLevelMessageSent.current) {
-        socket.emit("global_message", {
-          type: "achievement",
-          message: `Игрок ${playerName} достиг ${prevLevel} уровня!`,
-          sender: "Система"
-        });
-      }
-    }
-  }, [prevLevel, socket, isLoggedIn, playerName]);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const currentLevel = useMemo(() => {
-    let level = 1;
-    for (let i = 1; i <= 85; i++) {
-      if (xp >= XP_TABLE[i]) {
-        level = i;
-      } else {
-        break;
-      }
-    }
-    return level;
-  }, [xp]);
 
   const isMaxLevel = currentLevel >= 85;
   const currentLevelBaseXp = XP_TABLE[currentLevel];
@@ -1995,31 +1984,55 @@ export default function App() {
             {!isLoggedIn ? (
               <div className="flex flex-col gap-2 w-full">
                 <button
-                  onClick={() => {
-                    setPage(15);
+                  onClick={async () => {
+                    try {
+                      const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                      const googleProvider = new GoogleAuthProvider();
+                      const result = await signInWithPopup(auth, googleProvider);
+                      const user = result.user;
+                      
+                      let userDoc;
+                      try {
+                        userDoc = await getDoc(doc(db, "users", user.uid));
+                      } catch (error: any) {
+                        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+                        return;
+                      }
+                      
+                      if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setPlayerName(data.username || data.playerName);
+                        setPlayerEmail(data.email || data.playerEmail);
+                        if (data.race) setPlayerRace(data.race);
+                        if (data.gender) setPlayerGender(data.gender);
+                        if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+                        setIsLoggedIn(true);
+                        setHasCompletedOnboarding(true);
+                        setPage(2);
+                        toast.success("С возвращением через Google!");
+                      } else {
+                        // New user
+                        setPlayerEmail(user.email || "");
+                        setShowOnboarding(true);
+                        setPage(14); // Go to character creation
+                        toast.success("Добро пожаловать! Завершите создание персонажа.");
+                      }
+                    } catch (error: any) {
+                      toast.error("Ошибка авторизации Google: " + error.message);
+                    }
                   }}
-                  className="btn-secondary bg-white/10 text-xs"
+                  className="w-full py-4 rounded-2xl bg-white text-zinc-950 font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                 >
-                  Google: Регистрация / Вход
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                  </div>
+                  Войти через Google
                 </button>
-                <div className="grid grid-cols-2 gap-2 w-full">
-                  <button
-                    onClick={() => {
-                      setPage(17);
-                    }}
-                    className="btn-secondary bg-white/10 text-xs"
-                  >
-                    Вход
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPage(14);
-                    }}
-                    className="btn-secondary bg-white/10 text-xs"
-                  >
-                    Регистрация
-                  </button>
-                </div>
               </div>
             ) : (
               <button
@@ -2489,10 +2502,15 @@ export default function App() {
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <h2 className="text-2xl font-bold uppercase tracking-widest">Регистрация или вход</h2>
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 w-full space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Имя пользователя (Никнейм)</label>
+            <div className="text-center mb-6">
+              <Crown className="w-16 h-16 text-lime-400 mx-auto mb-4 opacity-50" />
+              <h2 className="text-2xl font-serif tracking-widest uppercase text-white">Создание персонажа</h2>
+              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">Выберите свой путь в этом мире</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/5 rounded-3xl p-6 w-full space-y-6 backdrop-blur-xl">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Имя персонажа (Никнейм)</label>
                 <input 
                   type="text" 
                   value={regUsername}
@@ -2503,78 +2521,43 @@ export default function App() {
                     }
                   }}
                   placeholder="Введите ник (4-12 англ. букв)..." 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400/50 transition-colors" 
                 />
-                {regUsername.length > 0 && (regUsername.length < 4 || regUsername.length > 12) && (
-                  <p className="text-[10px] text-red-400">От 4 до 12 английских букв</p>
-                )}
+                <p className="text-[9px] text-zinc-500 italic ml-1">Только английские буквы, от 4 до 12 символов</p>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Настоящее имя (для анкеты)</label>
-                <input 
-                  type="text" 
-                  value={tempRealName}
-                  onChange={(e) => setTempRealName(e.target.value)}
-                  placeholder="Введите ваше имя..." 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Email адрес</label>
-                <input 
-                  type="email" 
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="example@mail.com" 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Пароль</label>
-                <input 
-                  type="password" 
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Введите пароль..." 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Раса</label>
-                  <select 
-                    value={regRace}
-                    onChange={(e) => setRegRace(e.target.value)}
-                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50 appearance-none"
-                  >
-                    <option value="Человек">Человек</option>
-                    <option value="Эльф">Эльф</option>
-                    <option value="Орк">Орк</option>
-                    <option value="Гном">Гном</option>
-                    <option value="Нежить">Нежить</option>
-                  </select>
+
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Выберите Расу</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Человек", "Эльф", "Орк", "Гном", "Нежить"].map((race) => (
+                      <button
+                        key={race}
+                        onClick={() => setRegRace(race)}
+                        className={`py-2 px-1 rounded-xl border text-[10px] font-bold uppercase tracking-tighter transition-all ${regRace === race ? 'bg-lime-400/20 border-lime-400 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.2)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:border-white/20'}`}
+                      >
+                        {race}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold block text-center">Пол</label>
-                  <div className="grid grid-cols-2 gap-2 character-select">
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Выберите Пол</label>
+                  <div className="grid grid-cols-2 gap-3">
                     <button 
                       onClick={() => setRegGender("male")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${regGender === 'male' ? 'bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105' : 'bg-black/40 border-white/5 hover:border-white/20'}`}
+                      className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${regGender === 'male' ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:border-white/20'}`}
                     >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${regGender === 'male' ? 'bg-blue-500/30' : 'bg-white/5'}`}>
-                        <User className={`w-6 h-6 ${regGender === 'male' ? 'text-blue-400' : 'text-zinc-500'}`} />
-                      </div>
-                      <span className={`text-xs font-bold uppercase tracking-widest ${regGender === 'male' ? 'text-blue-400' : 'text-zinc-500'}`}>М</span>
+                      <User className="w-5 h-5" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Мужской</span>
                     </button>
                     <button 
                       onClick={() => setRegGender("female")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 ${regGender === 'female' ? 'bg-pink-500/20 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.3)] scale-105' : 'bg-black/40 border-white/5 hover:border-white/20'}`}
+                      className={`flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all duration-300 ${regGender === 'female' ? 'bg-pink-500/20 border-pink-500 text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.2)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:border-white/20'}`}
                     >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${regGender === 'female' ? 'bg-pink-500/30' : 'bg-white/5'}`}>
-                        <User className={`w-6 h-6 ${regGender === 'female' ? 'text-pink-400' : 'text-zinc-500'}`} />
-                      </div>
-                      <span className={`text-xs font-bold uppercase tracking-widest ${regGender === 'female' ? 'text-pink-400' : 'text-zinc-500'}`}>Ж</span>
+                      <User className="w-5 h-5" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Женский</span>
                     </button>
                   </div>
                 </div>
@@ -2582,319 +2565,103 @@ export default function App() {
 
               <button 
                 onClick={async () => {
-                  if (regUsername.length >= 4 && regUsername.length <= 12 && /^[a-zA-Z]+$/.test(regUsername)) {
-                    if (TAKEN_USERNAMES.includes(regUsername)) {
-                      toast.error("Это имя зарезервировано системой.");
-                      return;
-                    }
-                    try {
-                      // Check usernames collection first for global uniqueness
-                      const usernameDoc = await getDoc(doc(db, "usernames", regUsername));
-                      
-                      if (usernameDoc.exists()) {
-                        // If nickname exists in usernames, it could be a Google user or a form user
-                        const targetUid = usernameDoc.data().uid;
-                        const userDoc = await getDoc(doc(db, "users", targetUid));
-                        
-                        if (userDoc.exists()) {
-                          // LOGIN LOGIC
-                          const existingUser = userDoc.data();
-                          if (existingUser.password === regPassword) {
-                            try {
-                              const { signInAnonymously } = await import('firebase/auth');
-                              await signInAnonymously(auth);
-                            } catch (authErr: any) {
-                              if (authErr.code === 'auth/admin-restricted-operation') {
-                                toast.error("Ошибка: Включите 'Anonymous' провайдер в Firebase Console!");
-                                return;
-                              }
-                              throw authErr;
-                            }
-                            setPlayerName(regUsername);
-                            setPlayerRace(existingUser.race || "Человек");
-                            setPlayerGender(existingUser.gender || "male");
-                            setPlayerEmail(existingUser.email || "");
-                            setAvatarUrl(existingUser.avatarUrl || "");
-                            setRealName(existingUser.realName || "");
-                            setIsLoggedIn(true);
-                            setHasCompletedOnboarding(true);
-                            setPage(2);
-                            toast.success("С возвращением, " + regUsername + "!");
-                          } else {
-                            toast.error("Неверный пароль для этого пользователя.");
-                          }
-                        } else {
-                          toast.error("Ошибка данных пользователя.");
-                        }
-                      } else {
-                        // REGISTRATION LOGIC
-                        if (!tempRealName) {
-                          toast.error("Для регистрации введите ваше настоящее имя.");
-                          return;
-                        }
-                        if (!regEmail.includes("@")) {
-                          toast.error("Для регистрации введите корректный email.");
-                          return;
-                        }
-                        if (!regPassword) {
-                          toast.error("Введите пароль для регистрации.");
-                          return;
-                        }
-                        
-                        const newAvatarUrl = regGender === 'male' 
-                          ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                          : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a";
-                        
-                        const register = async (nickname: string, password: string, rName: string) => {
-                          try {
-                            try {
-                              const { signInAnonymously } = await import('firebase/auth');
-                              await signInAnonymously(auth);
-                            } catch (authErr: any) {
-                              if (authErr.code === 'auth/admin-restricted-operation') {
-                                toast.error("Ошибка: Включите 'Anonymous' (Анонимно) в Firebase Console -> Authentication -> Sign-in method!");
-                                throw new Error("Anonymous auth disabled");
-                              }
-                              throw authErr;
-                            }
-                            
-                            const welcomeMessage = {
-                              id: "welcome_" + Date.now(),
-                              text: "Добро пожаловать в Nation of Light and Darkness! В качестве приветственного подарка мы дарим вам 10,000 серебра и 500 алмазов. Удачи в приключениях!",
-                              date: new Date().toLocaleDateString(),
-                              read: false,
-                              claimable: {
-                                silver: 10000,
-                                diamonds: 500
-                              },
-                              claimed: false
-                            };
-
-                            await setDoc(doc(db, "users", nickname), {
-                              playerName: nickname,
-                              username: nickname,
-                              realName: rName,
-                              password: password,
-                              email: regEmail,
-                              race: regRace,
-                              gender: regGender,
-                              avatarUrl: newAvatarUrl,
-                              level: 1,
-                              stats: {
-                                strength: 10,
-                                agility: 10,
-                                intuition: 10,
-                                endurance: 10,
-                                wisdom: 10
-                              },
-                              silver: 1000,
-                              iron: 0,
-                              gold: 0,
-                              diamonds: 0,
-                              xp: 0,
-                              inventory: [],
-                              booksInventory: [],
-                              elixirsInventory: [],
-                              chestsInventory: [],
-                              equippedItems: {},
-                              messages: [welcomeMessage],
-                              createdAt: new Date().toISOString(),
-                              forestProgress: 0,
-                              blackWolfKills: 0,
-                              spentStrength: 0,
-                              spentAgility: 0,
-                              spentIntuition: 0,
-                              spentEndurance: 0,
-                              spentWisdom: 0,
-                              playerBadges: [],
-                              playerStatus: "Новичок"
-                            });
-                            await setDoc(doc(db, "usernames", nickname), { uid: nickname });
-                            setMessages([welcomeMessage]);
-                            setRealName(rName);
-                            toast.success("Аккаунт создан! Проверьте почту для получения подарка.");
-                          } catch (error) {
-                            handleFirestoreError(error, OperationType.CREATE, `users/${nickname}`);
-                          }
-                        };
-
-                        await register(regUsername, regPassword, tempRealName);
-                        setPlayerName(regUsername);
-                        setPlayerRace(regRace);
-                        setPlayerGender(regGender);
-                        setPlayerEmail(regEmail);
-                        setAvatarUrl(newAvatarUrl);
-                        setIsLoggedIn(true);
-                        setHasCompletedOnboarding(true);
-                        setPage(2);
-                      }
-                    } catch (error: any) {
-                      handleFirestoreError(error, OperationType.GET, `usernames/${regUsername}`);
-                    }
-                  } else {
-                    toast.error("Имя должно содержать от 4 до 12 английских букв.");
+                  if (regUsername.length < 4 || regUsername.length > 12 || !/^[a-zA-Z]+$/.test(regUsername)) {
+                    toast.error("Никнейм должен содержать от 4 до 12 английских букв.");
+                    return;
                   }
-                }} 
-                className="btn-secondary w-full mt-2"
-              >
-                Регистрация или вход
-              </button>
-              <div className="flex flex-col items-center gap-1 mt-2">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Уже есть аккаунт?</p>
-                <button onClick={() => setPage(17)} className="text-lime-300 hover:text-lime-300 text-xs font-bold uppercase tracking-widest underline underline-offset-4">Войти</button>
-              </div>
-              <button onClick={() => setPage(1)} className="w-full py-2 text-zinc-500 hover:text-zinc-300 text-sm">Назад</button>
-            </div>
-          </motion.div>
-        )}
+                  
+                  if (TAKEN_USERNAMES.includes(regUsername)) {
+                    toast.error("Это имя зарезервировано системой.");
+                    return;
+                  }
 
-        {page === 15 && (
-          <motion.div
-            key="page15"
-            className="min-h-[100dvh] flex flex-col items-center justify-center p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto gap-2"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <h2 className="text-2xl font-bold uppercase tracking-widest">Регистрация или авторизация Google</h2>
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 w-full space-y-6">
-              <button 
-                onClick={async () => {
                   try {
-                    const { signInWithPopup } = await import('firebase/auth');
-                    const { auth, googleProvider } = await import('./firebase');
-                    const result = await signInWithPopup(auth, googleProvider);
-                    const user = result.user;
-                    
-                    let userDoc;
-                    try {
-                      userDoc = await getDoc(doc(db, "users", user.uid));
-                    } catch (error: any) {
-                      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+                    const usernameDoc = await getDoc(doc(db, "usernames", regUsername));
+                    if (usernameDoc.exists()) {
+                      toast.error("Этот никнейм уже занят другим игроком.");
                       return;
                     }
-                    
-                    if (userDoc.exists()) {
-                      const data = userDoc.data();
-                      setPlayerName(data.username);
-                      setPlayerEmail(data.email);
-                      if (data.race) setPlayerRace(data.race);
-                      if (data.gender) setPlayerGender(data.gender);
-                      if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
-                      setIsLoggedIn(true);
-                      setHasCompletedOnboarding(true);
-                      setPage(2);
-                      toast.success("С возвращением через Google!");
-                    } else {
-                      // If user doesn't exist in Firestore, they are "registering" via Google
-                      setShowOnboarding(true);
-                      toast.success("Добро пожаловать! Завершите создание персонажа.");
+
+                    const user = auth.currentUser;
+                    if (!user) {
+                      toast.error("Ошибка авторизации. Попробуйте войти снова.");
+                      setPage(1);
+                      return;
                     }
+
+                    const newAvatarUrl = regGender === 'male' 
+                      ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
+                      : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a";
+
+                    const welcomeMessage = {
+                      id: "welcome_" + Date.now(),
+                      text: "Добро пожаловать в Nation of Light and Darkness! В качестве приветственного подарка мы дарим вам 10,000 серебра и 500 алмазов. Удачи в приключениях!",
+                      date: new Date().toLocaleDateString(),
+                      read: false,
+                      claimable: {
+                        silver: 10000,
+                        diamonds: 500
+                      },
+                      claimed: false
+                    };
+
+                    // Save to Firestore
+                    const initialData = {
+                      uid: user.uid,
+                      username: regUsername,
+                      playerName: regUsername,
+                      race: regRace,
+                      gender: regGender,
+                      avatarUrl: newAvatarUrl,
+                      email: user.email,
+                      silver: 1000,
+                      iron: 0,
+                      gold: 0,
+                      diamonds: 0,
+                      xp: 100,
+                      inventory: [],
+                      equippedItems: {
+                        "Шлем": null, "Наручи": null, "Меч": null, "Штаны": null, "Сапоги": null,
+                        "Ожерелье": null, "Перчатки": null, "Второе оружие": null, "Рубашка": null, "Пояс": null
+                      },
+                      messages: [welcomeMessage],
+                      hasCompletedOnboarding: true,
+                      createdAt: serverTimestamp(),
+                      roles: [],
+                      stats: {
+                        strength: 10, agility: 10, intuition: 10, endurance: 10, wisdom: 10
+                      },
+                      forestProgress: 0,
+                      blackWolfKills: 0,
+                      spentStrength: 0, spentAgility: 0, spentIntuition: 0, spentEndurance: 0, spentWisdom: 0,
+                      playerBadges: [],
+                      playerStatus: "Новичок"
+                    };
+
+                    await setDoc(doc(db, "users", user.uid), initialData);
+                    await setDoc(doc(db, "usernames", regUsername), { uid: user.uid });
+
+                    setPlayerName(regUsername);
+                    setPlayerRace(regRace);
+                    setPlayerGender(regGender);
+                    setPlayerEmail(user.email || "");
+                    setAvatarUrl(newAvatarUrl);
+                    setMessages([welcomeMessage]);
+                    setIsLoggedIn(true);
+                    setHasCompletedOnboarding(true);
+                    setPage(2);
+                    toast.success("Персонаж успешно создан! Добро пожаловать в игру.");
                   } catch (error: any) {
-                    toast.error("Ошибка авторизации Google: " + error.message);
+                    toast.error("Ошибка при создании персонажа: " + error.message);
                   }
-                }} 
-                className="btn-secondary w-full"
+                }}
+                className="w-full py-4 rounded-2xl bg-lime-400 text-zinc-950 font-black uppercase tracking-widest hover:bg-lime-300 transition-all shadow-[0_0_30px_rgba(163,230,53,0.3)]"
               >
-                Регистрация или авторизация Google
+                Начать приключение
               </button>
-              <button onClick={() => setPage(1)} className="w-full py-2 text-zinc-500 hover:text-zinc-300">Назад</button>
             </div>
           </motion.div>
         )}
-
-        {page === 17 && (
-          <motion.div
-            key="page17"
-            className="min-h-[100dvh] flex flex-col items-center justify-center p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto gap-2"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <h2 className="text-2xl font-bold uppercase tracking-widest">Вход</h2>
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 w-full space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Имя пользователя</label>
-                <input 
-                  type="text" 
-                  value={regUsername}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^[a-zA-Z]*$/.test(val) && val.length <= 12) {
-                      setRegUsername(val);
-                    }
-                  }}
-                  placeholder="Введите имя..." 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Пароль</label>
-                <input 
-                  type="password" 
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Введите пароль..." 
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-lime-400/50" 
-                />
-              </div>
-
-              <button 
-                onClick={async () => {
-                  if (regUsername.length >= 4 && regUsername.length <= 12 && /^[a-zA-Z]+$/.test(regUsername)) {
-                    try {
-                      const userDoc = await getDoc(doc(db, "users", regUsername));
-                      
-                      if (userDoc.exists()) {
-                        const existingUser = userDoc.data();
-                        if (existingUser.password === regPassword) {
-                          try {
-                            const { signInAnonymously } = await import('firebase/auth');
-                            await signInAnonymously(auth);
-                          } catch (authErr: any) {
-                            if (authErr.code === 'auth/admin-restricted-operation') {
-                              toast.error("Ошибка: Включите 'Anonymous' провайдер в Firebase Console!");
-                              return;
-                            }
-                            throw authErr;
-                          }
-                          setPlayerName(regUsername);
-                          setPlayerRace(existingUser.race || "Человек");
-                          setPlayerGender(existingUser.gender || "male");
-                          setPlayerEmail(existingUser.email || "");
-                          setAvatarUrl(existingUser.avatarUrl || "");
-                          setIsLoggedIn(true);
-                          setHasCompletedOnboarding(true);
-                          setPage(2);
-                          toast.success("С возвращением, " + regUsername + "!");
-                        } else {
-                          toast.error("Неверный пароль.");
-                        }
-                      } else {
-                        toast.error("Пользователь не найден. Зарегистрируйтесь.");
-                      }
-                    } catch (error: any) {
-                      handleFirestoreError(error, OperationType.GET, `users/${regUsername}`);
-                    }
-                  } else {
-                    toast.error("Имя должно содержать от 4 до 12 английских букв.");
-                  }
-                }} 
-                className="btn-secondary w-full mt-2"
-              >
-                Войти
-              </button>
-              <div className="flex flex-col items-center gap-1 mt-2">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Нет аккаунта?</p>
-                <button onClick={() => setPage(14)} className="text-lime-300 hover:text-lime-300 text-xs font-bold uppercase tracking-widest underline underline-offset-4">Зарегистрироваться</button>
-              </div>
-              <button onClick={() => setPage(1)} className="w-full py-2 text-zinc-500 hover:text-zinc-300 text-sm">Назад</button>
-            </div>
-          </motion.div>
-        )}
-
         {page === 16 && (
           <motion.div
             key="page16"
@@ -5405,7 +5172,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col gap-2">
-              {Array.from(onlineUsers).map(uid => {
+              {(Array.from(onlineUsers) as string[]).map(uid => {
                 const profile = onlineUserProfiles[uid];
                 const location = userLocations[uid] || "Неизвестно";
                 if (!profile) return null;
@@ -5514,14 +5281,14 @@ export default function App() {
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Сейчас в сети ({onlineUsers.size})</span>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
-                  {Array.from(onlineUsers).map(uid => {
+                  {(Array.from(onlineUsers) as string[]).map(uid => {
                     // We don't have a map of UID to names here easily without fetching
                     // But we can show a placeholder or just the count for now
                     // Or better, let's just show the count and maybe a few names if we can
                     return null;
                   })}
                   <div className="flex -space-x-2 overflow-hidden">
-                    {Array.from(onlineUsers).slice(0, 5).map((uid, i) => (
+                    {(Array.from(onlineUsers) as string[]).slice(0, 5).map((uid, i) => (
                       <div key={uid} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
                         {i + 1}
                       </div>
