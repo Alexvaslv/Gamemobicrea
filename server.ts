@@ -23,28 +23,47 @@ async function startServer() {
   const onlineUsers = new Map<string, string>(); // socket.id -> userId
   const userSockets = new Map<string, Set<string>>(); // userId -> Set of socket.ids
   const userLocations = new Map<string, string>(); // userId -> location name
+  const userProfiles = new Map<string, { playerName: string, avatarUrl?: string, level: number }>(); // userId -> profile data
 
   // Socket.io logic
   io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);
 
-    socket.on("user_login", (userId) => {
+    socket.on("user_login", (data) => {
+      const { userId, playerName, avatarUrl, level } = typeof data === 'string' ? { userId: data, playerName: 'Unknown', level: 1 } : data;
       if (!userId) return;
+      
       onlineUsers.set(socket.id, userId);
       if (!userSockets.has(userId)) {
         userSockets.set(userId, new Set());
       }
       userSockets.get(userId)!.add(socket.id);
       
-      // Broadcast that this user is online
-      io.emit("user_status", { userId, status: "online" });
+      if (playerName) {
+        userProfiles.set(userId, { playerName, avatarUrl, level });
+      }
       
-      // Send current locations to the new user
+      // Broadcast that this user is online with their profile
+      io.emit("user_status", { 
+        userId, 
+        status: "online", 
+        profile: userProfiles.get(userId) 
+      });
+      
+      // Send current online users and locations to the new user
       const locations: Record<string, string> = {};
       userLocations.forEach((loc, id) => {
         locations[id] = loc;
       });
-      socket.emit("all_locations", locations);
+      
+      const profiles: Record<string, any> = {};
+      userProfiles.forEach((prof, id) => {
+        if (userSockets.has(id)) {
+          profiles[id] = prof;
+        }
+      });
+
+      socket.emit("all_online_data", { locations, profiles });
     });
 
     socket.on("user_location", (location) => {
@@ -57,8 +76,12 @@ async function startServer() {
 
     socket.on("get_online_users", (callback) => {
       if (typeof callback === "function") {
-        const onlineUserIds = Array.from(userSockets.keys());
-        callback(onlineUserIds);
+        const onlineData = Array.from(userSockets.keys()).map(id => ({
+          userId: id,
+          profile: userProfiles.get(id),
+          location: userLocations.get(id)
+        }));
+        callback(onlineData);
       }
     });
 

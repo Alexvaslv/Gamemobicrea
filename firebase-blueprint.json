@@ -52,6 +52,7 @@
           }
         },
         "clanId": { "type": "string", "description": "ID or name of the clan the user belongs to" },
+        "roles": { "type": "array", "items": { "type": "string" }, "description": "User roles (e.g., admin, creator)" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
       },
       "required": ["playerName", "password", "email", "race", "gender", "createdAt"]

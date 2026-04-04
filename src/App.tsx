@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send } from "lucide-react";
+import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
@@ -287,7 +287,7 @@ for (let i = 8; i <= 85; i++) {
   XP_TABLE.push(Math.floor(XP_TABLE[i - 1] + prevDelta * 1.25));
 }
 
-const TAKEN_USERNAMES = ["admin", "player", "hero", "test", "root", "system", "moderator", "creator"];
+const TAKEN_USERNAMES = ["admin", "player", "hero", "test", "root", "system", "moderator", "creator", "Murr"];
 
 const COUNTRIES = [
   "Россия", "Украина", "Беларусь", "Казахстан", "Узбекистан", "Армения", "Грузия", "Азербайджан", 
@@ -706,6 +706,8 @@ export default function App() {
   }, [isLoggedIn]);
 
 
+  const [onlineUserProfiles, setOnlineUserProfiles] = useState<Record<string, any>>({});
+
   // Real-time Socket.IO connection
   useEffect(() => {
     const newSocket = io(window.location.origin);
@@ -713,20 +715,30 @@ export default function App() {
 
     newSocket.on("connect", () => {
       if (auth.currentUser) {
-        newSocket.emit("user_login", auth.currentUser.uid);
+        newSocket.emit("user_login", {
+          userId: auth.currentUser.uid,
+          playerName: playerName,
+          avatarUrl: avatarUrl,
+          level: currentLevel
+        });
       }
-      newSocket.emit("get_online_users", (users: string[]) => {
-        setOnlineUsers(new Set(users));
-      });
     });
 
-    newSocket.on("user_status", ({ userId, status }) => {
+    newSocket.on("user_status", ({ userId, status, profile }) => {
       setOnlineUsers(prev => {
         const next = new Set(prev);
         if (status === "online") {
           next.add(userId);
+          if (profile) {
+            setOnlineUserProfiles(prevProfiles => ({ ...prevProfiles, [userId]: profile }));
+          }
         } else {
           next.delete(userId);
+          setOnlineUserProfiles(prevProfiles => {
+            const nextProfiles = { ...prevProfiles };
+            delete nextProfiles[userId];
+            return nextProfiles;
+          });
           setUserLocations(prevLocs => {
             const nextLocs = { ...prevLocs };
             delete nextLocs[userId];
@@ -741,8 +753,10 @@ export default function App() {
       setUserLocations(prev => ({ ...prev, [userId]: location }));
     });
 
-    newSocket.on("all_locations", (locations) => {
+    newSocket.on("all_online_data", ({ locations, profiles }) => {
       setUserLocations(locations);
+      setOnlineUserProfiles(profiles);
+      setOnlineUsers(new Set(Object.keys(profiles)));
     });
 
     newSocket.on("global_message", (data) => {
@@ -767,9 +781,14 @@ export default function App() {
 
   useEffect(() => {
     if (socket && auth.currentUser) {
-      socket.emit("user_login", auth.currentUser.uid);
+      socket.emit("user_login", {
+        userId: auth.currentUser.uid,
+        playerName: playerName,
+        avatarUrl: avatarUrl,
+        level: currentLevel
+      });
     }
-  }, [socket, auth.currentUser]);
+  }, [socket, auth.currentUser, playerName, avatarUrl, currentLevel]);
 
   // Update location when page changes
   useEffect(() => {
@@ -836,6 +855,7 @@ export default function App() {
         if (data.spentWisdom !== undefined) setSpentWisdom(data.spentWisdom);
         if (data.playerBadges) setPlayerBadges(data.playerBadges);
         if (data.playerStatus) setPlayerStatus(data.playerStatus);
+        if (data.roles) setUserRoles(data.roles);
         
         // Reset the flag after a short delay to ensure all state updates are processed
         setTimeout(() => {
@@ -1184,6 +1204,20 @@ export default function App() {
   });
   const [playerStatus, setPlayerStatus] = useState<string | null>(() => localStorage.getItem("rpg_player_status"));
   const [targetUid, setTargetUid] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  const isAdmin = useMemo(() => {
+    return auth.currentUser?.email === 'svksinel@gmail.com' || 
+           playerName === 'Murr' || 
+           playerName === 'admin' || 
+           userRoles.includes('admin');
+  }, [auth.currentUser, playerName, userRoles]);
+
+  const isCreator = useMemo(() => {
+    return auth.currentUser?.email === 'svksinel@gmail.com' || 
+           playerName === 'Murr' || 
+           userRoles.includes('creator');
+  }, [auth.currentUser, playerName, userRoles]);
 
   // Global Chat Effect
   useEffect(() => {
@@ -1466,7 +1500,9 @@ export default function App() {
         sender: playerName,
         text: text,
         timestamp: serverTimestamp(),
-        avatarUrl: avatarUrl
+        avatarUrl: avatarUrl,
+        isCreator: isCreator,
+        isAdmin: isAdmin
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, "global_chat");
@@ -2547,6 +2583,10 @@ export default function App() {
               <button 
                 onClick={async () => {
                   if (regUsername.length >= 4 && regUsername.length <= 12 && /^[a-zA-Z]+$/.test(regUsername)) {
+                    if (TAKEN_USERNAMES.includes(regUsername)) {
+                      toast.error("Это имя зарезервировано системой.");
+                      return;
+                    }
                     try {
                       // Check usernames collection first for global uniqueness
                       const usernameDoc = await getDoc(doc(db, "usernames", regUsername));
@@ -2999,7 +3039,10 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
+                    {isCreator && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
                     <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Онлайн</span>
@@ -3007,6 +3050,15 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setPage(29)}
+                  className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors relative"
+                >
+                  <Users className="w-5 h-5" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-white">{onlineUsers.size}</span>
+                  </div>
+                </button>
                 <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
                 <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
                   <Settings className="w-5 h-5" />
@@ -3181,6 +3233,18 @@ export default function App() {
                   <User className="w-5 h-5 text-lime-400" /> Мой персонаж
                 </motion.button>
               </div>
+
+              {isAdmin && (
+                <div className="mt-4">
+                  <motion.button 
+                    onClick={() => setPage(28)} 
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
+                    className="w-full py-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 font-bold text-red-400"
+                  >
+                    <ShieldAlert className="w-5 h-5" /> Админ Панель
+                  </motion.button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -3371,6 +3435,12 @@ export default function App() {
                 {playerBadges.includes('admin') && (
                   <div className="p-1.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400">
                     <Crown className="w-4 h-4" />
+                  </div>
+                )}
+                {isCreator && (
+                  <div className="p-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1 px-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Создатель</span>
                   </div>
                 )}
                 {playerBadges.includes('verified') && (
@@ -5309,6 +5379,83 @@ export default function App() {
           </motion.div>
         )}
 
+        {page === 29 && (
+          <motion.div
+            key="page29"
+            className="min-h-[100dvh] flex flex-col p-4 pb-24 text-zinc-100"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black tracking-tight text-white uppercase">Игроки онлайн</h2>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Всего: {onlineUsers.size}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setPage(2)}
+                className="w-10 h-10 rounded-xl glass-card border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {Array.from(onlineUsers).map(uid => {
+                const profile = onlineUserProfiles[uid];
+                const location = userLocations[uid] || "Неизвестно";
+                if (!profile) return null;
+                
+                return (
+                  <button 
+                    key={uid}
+                    onClick={() => viewPlayerProfile(uid)}
+                    className="w-full glass-card p-3 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
+                          <img 
+                            src={profile.avatarUrl || "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a"}
+                            alt="Avatar" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-lime-400">{profile.level}</span>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-white group-hover:text-green-400 transition-colors">{profile.playerName}</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        </div>
+                        <div className="flex items-center gap-1 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {location}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                  </button>
+                );
+              })}
+              
+              {onlineUsers.size === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                  <Users className="w-12 h-12 mb-3 opacity-20" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Никого нет онлайн</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {page === 19 && (
           <motion.div
             key="page19"
@@ -5344,7 +5491,13 @@ export default function App() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-[10px] font-bold text-lime-300 uppercase tracking-widest">{msg.sender}</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${msg.isCreator ? 'text-amber-400' : msg.isAdmin ? 'text-red-400' : 'text-lime-300'}`}>
+                              {msg.sender}
+                            </span>
+                            {msg.isCreator && <ShieldCheck className="w-2.5 h-2.5 text-amber-400" />}
+                            {msg.isAdmin && !msg.isCreator && <Crown className="w-2.5 h-2.5 text-red-400" />}
+                          </div>
                           <span className="text-[8px] text-zinc-600">{msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                         </div>
                         <p className="text-xs text-zinc-300 leading-relaxed">{msg.text}</p>
@@ -6317,6 +6470,256 @@ export default function App() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {page === 28 && isAdmin && (
+          <motion.div
+            key="page28"
+            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <div className="flex items-center mb-8 relative mt-4">
+              <button 
+                onClick={() => setPage(2)} 
+                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-red-500">Админ Панель</h2>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-6">
+              {/* Player Management Section */}
+              <div className="glass-card p-4 border-red-500/20">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-400" /> Управление игроками
+                </h3>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <input 
+                      id="admin-player-search"
+                      type="text" 
+                      placeholder="Имя игрока..."
+                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={async () => {
+                        const name = (document.getElementById('admin-player-search') as HTMLInputElement).value.trim();
+                        if (!name) { toast.error("Введите имя"); return; }
+                        try {
+                          const userDoc = await getDoc(doc(db, "users", name));
+                          if (userDoc.exists()) {
+                            const data = userDoc.data();
+                            const currentRoles = data.roles || [];
+                            const isTargetAdmin = currentRoles.includes('admin');
+                            const newRoles = isTargetAdmin 
+                              ? currentRoles.filter((r: string) => r !== 'admin')
+                              : [...currentRoles, 'admin'];
+                            await updateDoc(doc(db, "users", name), { roles: newRoles });
+                            toast.success(`Админ для ${name}: ${!isTargetAdmin ? 'ВКЛ' : 'ВЫКЛ'}`);
+                          } else { toast.error("Игрок не найден"); }
+                        } catch (err) { toast.error("Ошибка"); }
+                      }}
+                      className="py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors"
+                    >
+                      Админ +/-
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        const name = (document.getElementById('admin-player-search') as HTMLInputElement).value.trim();
+                        if (!name) { toast.error("Введите имя"); return; }
+                        try {
+                          const userDoc = await getDoc(doc(db, "users", name));
+                          if (userDoc.exists()) {
+                            const data = userDoc.data();
+                            const currentRoles = data.roles || [];
+                            const isTargetCreator = currentRoles.includes('creator');
+                            const newRoles = isTargetCreator 
+                              ? currentRoles.filter((r: string) => r !== 'creator')
+                              : [...currentRoles, 'creator'];
+                            await updateDoc(doc(db, "users", name), { roles: newRoles });
+                            toast.success(`Создатель для ${name}: ${!isTargetCreator ? 'ВКЛ' : 'ВЫКЛ'}`);
+                          } else { toast.error("Игрок не найден"); }
+                        } catch (err) { toast.error("Ошибка"); }
+                      }}
+                      className="py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold hover:bg-amber-500/20 transition-colors"
+                    >
+                      Создатель +/-
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item Spawner Section */}
+              <div className="glass-card p-4 border-red-500/20">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                  <Backpack className="w-4 h-4 text-purple-400" /> Спавнер предметов
+                </h3>
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {['equipment', 'elixirs', 'books', 'chests'].map(cat => (
+                      <button 
+                        key={cat}
+                        onClick={() => {
+                          const items = SHOP_ITEMS[cat] || [];
+                          if (items.length > 0) {
+                            const randomItem = items[Math.floor(Math.random() * items.length)];
+                            if (cat === 'equipment') {
+                              setInventory(prev => [...prev, { ...randomItem, id: `${randomItem.id}_${Date.now()}` }]);
+                            } else if (cat === 'elixirs') {
+                              setElixirsInventory(prev => {
+                                const existing = prev.find(i => i.id === randomItem.id);
+                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
+                                return [...prev, { ...randomItem, count: 1 }];
+                              });
+                            } else if (cat === 'books') {
+                              setBooksInventory(prev => {
+                                const existing = prev.find(i => i.id === randomItem.id);
+                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
+                                return [...prev, { ...randomItem, count: 1 }];
+                              });
+                            } else if (cat === 'chests') {
+                              setChestsInventory(prev => {
+                                const existing = prev.find(i => i.id === randomItem.id);
+                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
+                                return [...prev, { ...randomItem, count: 1 }];
+                              });
+                            }
+                            toast.success(`Выдан предмет: ${randomItem.name}`);
+                          }
+                        }}
+                        className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors capitalize"
+                      >
+                        Случ. {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const legendary = SHOP_ITEMS.equipment.filter(i => i.rarity === 'legendary');
+                      if (legendary.length > 0) {
+                        const item = legendary[Math.floor(Math.random() * legendary.length)];
+                        setInventory(prev => [...prev, { ...item, id: `${item.id}_${Date.now()}` }]);
+                        toast.success(`Выдана легендарка: ${item.name}`);
+                      }
+                    }}
+                    className="w-full py-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold hover:bg-orange-500/20 transition-colors"
+                  >
+                    Выдать случайную легендарку
+                  </button>
+                </div>
+              </div>
+
+              {/* Resources Section */}
+              <div className="glass-card p-4 border-red-500/20">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-amber-400" /> Ресурсы
+                </h3>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <button 
+                    onClick={() => setSilver(prev => prev + 100000)}
+                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
+                  >
+                    +100k Серебра
+                  </button>
+                  <button 
+                    onClick={() => setGold(prev => prev + 1000)}
+                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
+                  >
+                    +1k Золота
+                  </button>
+                  <button 
+                    onClick={() => setIron(prev => prev + 5000)}
+                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
+                  >
+                    +5k Железа
+                  </button>
+                  <button 
+                    onClick={() => setDiamonds(prev => prev + 100)}
+                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
+                  >
+                    +100 Алмазов
+                  </button>
+                </div>
+              </div>
+
+              {/* Level Section */}
+              <div className="glass-card p-4 border-red-500/20">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-lime-400" /> Уровень
+                </h3>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      const nextLevelXp = XP_TABLE[currentLevel + 1] || 0;
+                      setXp(nextLevelXp);
+                    }}
+                    className="flex-1 py-3 rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold hover:bg-lime-500/20 transition-colors"
+                  >
+                    Следующий уровень
+                  </button>
+                  <button 
+                    onClick={() => setXp(0)}
+                    className="flex-1 py-3 rounded-xl bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 text-xs font-bold hover:bg-zinc-500/20 transition-colors"
+                  >
+                    Сбросить XP
+                  </button>
+                </div>
+              </div>
+
+              {/* Global Message */}
+              <div className="glass-card p-4 border-red-500/20">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-blue-400" /> Глобальное сообщение
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Текст сообщения..."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = e.currentTarget.value;
+                        if (val.trim() && socket) {
+                          socket.emit("global_message", {
+                            type: "achievement",
+                            message: val,
+                            sender: "Администратор"
+                          });
+                          e.currentTarget.value = "";
+                          toast.success("Сообщение отправлено!");
+                        }
+                      }
+                    }}
+                  />
+                  <p className="text-[9px] text-zinc-500 italic">Нажмите Enter для отправки всем игрокам</p>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="mt-auto glass-card p-4 border-red-500/40 bg-red-500/5">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-red-500 mb-4 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" /> Опасная зона
+                </h3>
+                <button 
+                  onClick={() => {
+                    if (confirm("ВНИМАНИЕ! Это действие полностью сбросит ваш прогресс. Вы уверены?")) {
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-colors"
+                >
+                  Сбросить мой прогресс
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 
