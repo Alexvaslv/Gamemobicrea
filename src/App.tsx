@@ -10,6 +10,7 @@ import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
 import { io, Socket } from "socket.io-client";
+import { ITEMS } from "./items";
 
 // --- Firestore Data Service ---
 
@@ -209,7 +210,7 @@ const LocationPlayers = ({ location, userLocations, currentUserId }: { location:
 };
 
 const EquipSlot = ({ label, item, onUnequip }: { label: string, item?: Item | null, onUnequip?: () => void }) => (
-  <div className="flex flex-col items-center gap-1 group w-full">
+  <div className="flex flex-col items-center gap-1 group w-full max-w-[70px] mx-auto">
     <div 
       onClick={() => item && onUnequip && onUnequip()}
       className={`w-full aspect-square rounded-2xl relative transition-all duration-500 cursor-pointer overflow-hidden group-hover:scale-105 ${
@@ -3056,9 +3057,9 @@ export default function App() {
             </div>
 
             {/* Character & Slots */}
-            <div className="character mt-4">
+            <div className="mt-4 grid gap-2 md:gap-4 items-center" style={{ gridTemplateColumns: '1fr 200px 1fr' }}>
               {/* Left Column */}
-              <div className="flex flex-col justify-between h-full" style={{ gridColumn: 1, gridRow: '1 / span 3' }}>
+              <div className="flex flex-col justify-between h-[450px]">
                 <EquipSlot label="Шлем" item={equippedItems["Шлем"]} onUnequip={() => unequipItem("Шлем")} />
                 <EquipSlot label="Наручи" item={equippedItems["Наручи"]} onUnequip={() => unequipItem("Наручи")} />
                 <EquipSlot label="Меч" item={equippedItems["Меч"]} onUnequip={() => unequipItem("Меч")} />
@@ -3067,22 +3068,46 @@ export default function App() {
               </div>
 
               {/* Center Silhouette */}
-              <div className="avatar rounded-3xl border-2 border-white/5 relative shadow-2xl overflow-hidden flex items-center justify-center" style={{ gridRow: '1 / span 3' }}>
+              <div 
+                className="relative flex items-center justify-center overflow-hidden mx-auto" 
+                style={{ 
+                  width: '200px',
+                  height: '450px', 
+                  borderRadius: '24px',
+                  background: 'linear-gradient(180deg, rgba(20,20,35,0.95) 0%, rgba(10,10,18,0.98) 100%)',
+                  border: '1px solid rgba(120,120,255,0.25)',
+                  boxShadow: '0 0 20px rgba(0,180,255,0.18), 0 0 40px rgba(120,0,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05)'
+                }}
+              >
+                {/* Inner Blur & Background Glow */}
+                <div className="absolute inset-0 backdrop-blur-sm rounded-[24px]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-purple-500/10 rounded-[24px]" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-blue-500/20 blur-[40px] rounded-full" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-purple-500/20 blur-[40px] rounded-full" />
+
+                {/* Header: "ГЕРОЙ" */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center z-20">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-blue-300/80 font-black drop-shadow-[0_0_8px_rgba(0,180,255,0.8)]">
+                    ГЕРОЙ
+                  </span>
+                </div>
+
                 {/* Nickname above Avatar */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-lime-400/60 font-black drop-shadow-sm">
+                <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full text-center z-20">
+                  <span className="text-xs uppercase tracking-[0.1em] text-white font-bold drop-shadow-md">
                     {playerName}
                   </span>
                 </div>
 
-                <div className="absolute inset-0 flex items-center justify-center p-4">
+                {/* Avatar / Silhouette */}
+                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
                   <img 
                     src={avatarUrl || (playerGender === 'male' 
                       ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                       : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                     }
                     alt=""
-                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-40' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-40'} filter blur-[0.5px] transition-all duration-700`}
+                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-60' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-60'} filter drop-shadow-[0_0_15px_rgba(120,120,255,0.4)] transition-all duration-700`}
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -3091,31 +3116,36 @@ export default function App() {
                     }}
                   />
                 </div>
-                <div className="fallback-silhouette hidden absolute inset-0 flex items-center justify-center">
-                  {playerGender === 'male' ? <Swords className="w-40 h-40 text-blue-500/40 filter blur-[1px]" /> : <User className="w-40 h-40 text-pink-500/40 filter blur-[1px]" />}
+                
+                {/* Fallback Silhouette */}
+                <div className="fallback-silhouette hidden absolute inset-0 flex items-center justify-center z-10">
+                  {playerGender === 'male' ? <Swords className="w-32 h-32 text-blue-400/50 filter drop-shadow-[0_0_10px_rgba(0,180,255,0.5)]" /> : <User className="w-32 h-32 text-purple-400/50 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]" />}
                 </div>
-                <div className={`absolute inset-0 bg-gradient-to-t ${playerGender === 'male' ? 'from-blue-900/20' : 'from-pink-900/20'} to-transparent pointer-events-none`} />
+                
+                {/* Decorative Bottom Light */}
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-blue-900/40 to-transparent pointer-events-none z-10" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-blue-400/50 blur-[2px] rounded-t-full z-20" />
                 
                 {/* Energy Particles (CSS simulated) */}
-                <div className="absolute inset-0 opacity-30 pointer-events-none">
-                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-white rounded-full animate-ping" />
-                  <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-white rounded-full animate-ping delay-300" />
-                  <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-ping delay-700" />
+                <div className="absolute inset-0 opacity-50 pointer-events-none z-10">
+                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-blue-300 rounded-full animate-ping shadow-[0_0_5px_#93c5fd]" />
+                  <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-purple-300 rounded-full animate-ping delay-300 shadow-[0_0_5px_#d8b4fe]" />
+                  <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-ping delay-700 shadow-[0_0_5px_#ffffff]" />
                 </div>
                 
                 {/* Overlay icons for equipped items */}
-                <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 p-4 opacity-30 pointer-events-none">
+                <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 p-4 opacity-40 pointer-events-none z-10">
                   {(Object.values(equippedItems) as (Item | null)[]).map((item, i) => {
                     if (!item) return <div key={i} />;
                     const name = item.name.toLowerCase();
                     return (
                       <div key={i} className="flex items-center justify-center">
-                        {name.includes("меч") && <Swords className="w-4 h-4 text-lime-300" />}
-                        {name.includes("щит") && <Shield className="w-4 h-4 text-lime-300" />}
-                        {name.includes("лук") && <Wind className="w-4 h-4 text-lime-300" />}
-                        {name.includes("топор") && <Gavel className="w-4 h-4 text-lime-300" />}
-                        {name.includes("посох") && <Star className="w-4 h-4 text-lime-300" />}
-                        {name.includes("рубашка") && <User className="w-4 h-4 text-lime-300" />}
+                        {name.includes("меч") && <Swords className="w-4 h-4 text-blue-300" />}
+                        {name.includes("щит") && <Shield className="w-4 h-4 text-blue-300" />}
+                        {name.includes("лук") && <Wind className="w-4 h-4 text-blue-300" />}
+                        {name.includes("топор") && <Gavel className="w-4 h-4 text-blue-300" />}
+                        {name.includes("посох") && <Star className="w-4 h-4 text-blue-300" />}
+                        {name.includes("рубашка") && <User className="w-4 h-4 text-blue-300" />}
                       </div>
                     );
                   })}
@@ -3123,8 +3153,8 @@ export default function App() {
 
                 {/* Clan Name below Avatar */}
                 {clanId && (
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                    <span className="text-[9px] uppercase tracking-widest text-purple-400 font-bold drop-shadow-sm">
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full text-center z-20">
+                    <span className="text-[9px] uppercase tracking-widest text-purple-300 font-bold drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]">
                       &lt;{clanId}&gt;
                     </span>
                   </div>
@@ -3132,7 +3162,7 @@ export default function App() {
               </div>
 
               {/* Right Column */}
-              <div className="flex flex-col justify-between h-full" style={{ gridColumn: 3, gridRow: '1 / span 3' }}>
+              <div className="flex flex-col justify-between h-[450px]">
                 <EquipSlot label="Ожерелье" item={equippedItems["Ожерелье"]} onUnequip={() => unequipItem("Ожерелье")} />
                 <EquipSlot label="Перчатки" item={equippedItems["Перчатки"]} onUnequip={() => unequipItem("Перчатки")} />
                 <EquipSlot label="Второе оружие" item={equippedItems["Второе оружие"]} onUnequip={() => unequipItem("Второе оружие")} />
@@ -3580,41 +3610,66 @@ export default function App() {
                       {/* Selected Item Card */}
                       {selectedItemIdx !== null && (
                         <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-lg bg-zinc-900 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                          <div className={`w-16 h-16 rounded-lg bg-zinc-900 border flex items-center justify-center overflow-hidden shrink-0 ${
+                            ITEMS[selectedItemIdx].rarity === 'legendary' ? 'border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]' :
+                            ITEMS[selectedItemIdx].rarity === 'epic' ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
+                            ITEMS[selectedItemIdx].rarity === 'rare' ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
+                            'border-white/20'
+                          }`}>
                             <img 
-                              src={`/assets/icons/item_${String(selectedItemIdx + 1).padStart(3, '0')}.png`} 
+                              src={ITEMS[selectedItemIdx].icon} 
                               alt={`Item ${selectedItemIdx + 1}`}
                               className="w-full h-full object-contain"
                             />
                           </div>
                           <div className="flex flex-col">
-                            <h3 className="text-sm font-bold text-lime-300">Предмет #{selectedItemIdx + 1}</h3>
-                            <p className="text-[10px] text-zinc-400 mt-1">ID: item_{String(selectedItemIdx + 1).padStart(3, '0')}</p>
+                            <h3 className={`text-sm font-bold ${
+                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'text-orange-400' :
+                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'text-purple-400' :
+                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'text-blue-400' :
+                              'text-zinc-300'
+                            }`}>Предмет #{selectedItemIdx + 1}</h3>
+                            <p className="text-[10px] text-zinc-400 mt-1">ID: {ITEMS[selectedItemIdx].id}</p>
+                            <p className="text-[9px] uppercase tracking-widest mt-1 opacity-70">
+                              {ITEMS[selectedItemIdx].rarity === 'legendary' ? 'Легендарный' :
+                               ITEMS[selectedItemIdx].rarity === 'epic' ? 'Эпический' :
+                               ITEMS[selectedItemIdx].rarity === 'rare' ? 'Редкий' : 'Обычный'}
+                            </p>
                           </div>
                         </div>
                       )}
 
                       {/* Grid */}
                       <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                        {Array.from({ length: 100 }).map((_, idx) => {
+                        {ITEMS.map((item, idx) => {
                           const isSelected = selectedItemIdx === idx;
-                          const iconId = String(idx + 1).padStart(3, '0');
-                          const iconPath = `/assets/icons/item_${iconId}.png`;
+                          
+                          const rarityColors = {
+                            common: "bg-zinc-900/80 border-white/10 hover:border-white/30",
+                            rare: "bg-blue-950/40 border-blue-500/30 hover:border-blue-500/50",
+                            epic: "bg-purple-950/40 border-purple-500/30 hover:border-purple-500/50",
+                            legendary: "bg-orange-950/40 border-orange-500/30 hover:border-orange-500/50"
+                          };
+                          
+                          const selectedColors = {
+                            common: "bg-zinc-800 border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10",
+                            rare: "bg-blue-900/40 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] z-10",
+                            epic: "bg-purple-900/40 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] z-10",
+                            legendary: "bg-orange-900/40 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)] z-10"
+                          };
 
                           return (
-                            <div key={idx} className="relative aspect-square">
+                            <div key={item.id} className="relative aspect-square">
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setSelectedItemIdx(isSelected ? null : idx)}
                                 className={`w-full h-full rounded-xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
-                                  isSelected
-                                    ? "bg-lime-400/20 border-lime-300 shadow-[0_0_15px_rgba(163,230,53,0.2)] z-10"
-                                    : "bg-zinc-900/80 border-white/10 hover:border-white/30"
+                                  isSelected ? selectedColors[item.rarity] : rarityColors[item.rarity]
                                 }`}
                               >
                                 <img 
-                                  src={iconPath} 
+                                  src={item.icon} 
                                   alt={`Item ${idx + 1}`}
                                   className="w-3/4 h-3/4 object-contain"
                                   loading="lazy"
@@ -4980,98 +5035,104 @@ export default function App() {
         {page === 19 && (
           <motion.div
             key="page19"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            className="min-h-[100dvh] flex flex-col bg-slate-50 text-slate-900 w-full max-w-md mx-auto absolute inset-0 z-50"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">💬 Общий чат</h2>
-                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Голос мира</p>
-              </div>
-              <button onClick={() => setPage(2)} className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
-                <ChevronRight className="w-5 h-5 rotate-180" />
+            {/* Header */}
+            <div className="bg-white px-4 py-4 flex items-center justify-between shadow-sm z-10">
+              <button onClick={() => setPage(2)} className="p-2 -ml-2 text-slate-400 hover:text-slate-600 transition-colors">
+                <ChevronRight className="w-6 h-6 rotate-180" />
               </button>
+              <div className="text-center">
+                <h2 className="text-base font-bold text-slate-800">Общий чат</h2>
+                <p className="text-[10px] text-slate-400 font-medium">Голос мира</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-100">
+                <img src={avatarUrl || "https://via.placeholder.com/32"} alt="Avatar" className="w-full h-full object-cover" />
+              </div>
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 bg-black/40 rounded-3xl border border-white/5 mb-4 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3">
-                {chatMessages.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
-                    Сообщений пока нет...
-                  </div>
-                ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className="flex gap-3 group cursor-pointer" onClick={() => {
-                      // If we have a way to get UID from sender name, we could view profile
-                      // For now, just a visual hint
-                    }}>
-                      <div className="w-8 h-8 rounded-lg bg-zinc-900/80 flex-shrink-0 overflow-hidden border border-white/5">
-                        <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <div className="flex items-center gap-1">
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${msg.isCreator ? 'text-amber-400' : msg.isAdmin ? 'text-red-400' : 'text-lime-300'}`}>
+            {/* Online Users List (Optional, styled to fit) */}
+            <div className="bg-white/50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">В сети: {onlineUsers.size}</span>
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
+              <div className="text-center my-2">
+                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Сегодня</span>
+              </div>
+              
+              {chatMessages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+                  Сообщений пока нет...
+                </div>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.sender === playerName;
+                  
+                  return (
+                    <div key={msg.id} className={`flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      {!isMe && (
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden mt-auto">
+                          <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                      )}
+                      
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                        {!isMe && (
+                          <div className="flex items-center gap-1 mb-1 ml-1">
+                            <span className={`text-[10px] font-bold ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-slate-500'}`}>
                               {msg.sender}
                             </span>
-                            {msg.isCreator && <ShieldCheck className="w-2.5 h-2.5 text-amber-400" />}
-                            {msg.isAdmin && !msg.isCreator && <Crown className="w-2.5 h-2.5 text-red-400" />}
+                            {msg.isCreator && <ShieldCheck className="w-3 h-3 text-amber-500" />}
+                            {msg.isAdmin && !msg.isCreator && <Crown className="w-3 h-3 text-red-500" />}
                           </div>
-                          <span className="text-[8px] text-zinc-600">{msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
+                        )}
+                        
+                        <div className={`p-3 relative ${
+                          isMe 
+                            ? 'bg-white border border-slate-100 text-slate-800 rounded-2xl rounded-br-sm shadow-sm' 
+                            : 'bg-pink-100 text-slate-800 rounded-2xl rounded-tl-sm'
+                        }`}>
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
                         </div>
-                        <p className="text-xs text-zinc-300 leading-relaxed">{msg.text}</p>
+                        
+                        <span className="text-[9px] text-slate-400 mt-1 mx-1">
+                          {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
+                        </span>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-
-              {/* Online Users List */}
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Сейчас в сети ({onlineUsers.size})</span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
-                  {(Array.from(onlineUsers) as string[]).map(uid => {
-                    // We don't have a map of UID to names here easily without fetching
-                    // But we can show a placeholder or just the count for now
-                    // Or better, let's just show the count and maybe a few names if we can
-                    return null;
-                  })}
-                  <div className="flex -space-x-2 overflow-hidden">
-                    {(Array.from(onlineUsers) as string[]).slice(0, 5).map((uid, i) => (
-                      <div key={uid} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
-                        {i + 1}
-                      </div>
-                    ))}
-                    {onlineUsers.size > 5 && (
-                      <div className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-900 flex items-center justify-center text-[8px] font-bold text-zinc-400">
-                        +{onlineUsers.size - 5}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                  );
+                })
+              )}
             </div>
 
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Написать сообщение..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-                className="flex-1 bg-black/40 border border-white/5 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
-              />
-              <button 
-                onClick={sendChatMessage}
-                className="p-3 bg-green-500 rounded-2xl text-green-950 hover:bg-green-400 transition-colors"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+            {/* Input Area */}
+            <div className="bg-white p-4 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10">
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 bg-slate-100 rounded-full px-4 py-3 flex items-center">
+                  <input 
+                    type="text" 
+                    placeholder="Написать сообщение..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                    className="bg-transparent border-none outline-none w-full text-sm text-slate-800 placeholder:text-slate-400"
+                  />
+                </div>
+                <button 
+                  onClick={sendChatMessage}
+                  className="w-11 h-11 rounded-full bg-pink-500 flex items-center justify-center text-white hover:bg-pink-600 transition-colors shadow-md shadow-pink-500/20 shrink-0"
+                >
+                  <Send className="w-5 h-5 ml-0.5" />
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
