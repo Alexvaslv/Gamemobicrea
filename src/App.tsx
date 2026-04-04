@@ -187,6 +187,27 @@ interface Item {
   };
 }
 
+const LocationPlayers = ({ location, userLocations, currentUserId }: { location: string, userLocations: Record<string, string>, currentUserId?: string }) => {
+  const playersInLocation = Object.entries(userLocations).filter(([uid, loc]) => loc === location && uid !== currentUserId);
+  
+  if (playersInLocation.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
+      <div className="flex -space-x-1.5 overflow-hidden">
+        {playersInLocation.slice(0, 3).map(([uid], i) => (
+          <div key={uid} className="inline-block h-4 w-4 rounded-full ring-1 ring-black bg-zinc-800 flex items-center justify-center text-[6px] font-bold text-zinc-500">
+            {i + 1}
+          </div>
+        ))}
+      </div>
+      <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+        {playersInLocation.length} {playersInLocation.length === 1 ? 'игрок' : 'игрока'} здесь
+      </span>
+    </div>
+  );
+};
+
 const EquipSlot = ({ label, item, onUnequip }: { label: string, item?: Item | null, onUnequip?: () => void }) => (
   <div className="flex flex-col items-center gap-1 group w-full">
     <div 
@@ -428,6 +449,11 @@ export default function App() {
     toast.success(`Предмет ${item.name} разобран. Получено ${ironGained} железа.`);
   };
 
+  const viewPlayerProfile = (uid: string) => {
+    setTargetUid(uid);
+    setPage(16);
+  };
+
   const equipItem = (idx: number) => {
     const item = inventory[idx];
     if (!item) return;
@@ -661,6 +687,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [userLocations, setUserLocations] = useState<Record<string, string>>({});
   const [clan, setClan] = useState<any>(null);
   const [clanId, setClanId] = useState<string | null>(() => localStorage.getItem("rpg_clan_id"));
   const [tempUsername, setTempUsername] = useState("");
@@ -700,9 +727,22 @@ export default function App() {
           next.add(userId);
         } else {
           next.delete(userId);
+          setUserLocations(prevLocs => {
+            const nextLocs = { ...prevLocs };
+            delete nextLocs[userId];
+            return nextLocs;
+          });
         }
         return next;
       });
+    });
+
+    newSocket.on("user_location", ({ userId, location }) => {
+      setUserLocations(prev => ({ ...prev, [userId]: location }));
+    });
+
+    newSocket.on("all_locations", (locations) => {
+      setUserLocations(locations);
     });
 
     newSocket.on("global_message", (data) => {
@@ -730,6 +770,21 @@ export default function App() {
       socket.emit("user_login", auth.currentUser.uid);
     }
   }, [socket, auth.currentUser]);
+
+  // Update location when page changes
+  useEffect(() => {
+    if (socket && isLoggedIn) {
+      let locationName = "Город";
+      if (page === 4) locationName = "Лес";
+      if (page === 26) locationName = "Горы";
+      if (page === 25) locationName = "Арена";
+      if (page === 19) locationName = "Чат";
+      if (page === 21) locationName = "Форум";
+      if (page === 10) locationName = "Магазин";
+      
+      socket.emit("user_location", locationName);
+    }
+  }, [page, socket, isLoggedIn]);
 
   // Real-time Firestore user data
   useEffect(() => {
@@ -965,6 +1020,19 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [prevLevel, setPrevLevel] = useState(() => parseInt(localStorage.getItem("rpg_prev_level") || "1"));
+
+  // Global announcements for level-ups and items
+  useEffect(() => {
+    if (socket && isLoggedIn && playerName) {
+      if (prevLevel > 1 && lastLevelMessageSent.current !== undefined && prevLevel > lastLevelMessageSent.current) {
+        socket.emit("global_message", {
+          type: "achievement",
+          message: `Игрок ${playerName} достиг ${prevLevel} уровня!`,
+          sender: "Система"
+        });
+      }
+    }
+  }, [prevLevel, socket, isLoggedIn, playerName]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const currentLevel = useMemo(() => {
@@ -1115,6 +1183,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [playerStatus, setPlayerStatus] = useState<string | null>(() => localStorage.getItem("rpg_player_status"));
+  const [targetUid, setTargetUid] = useState<string | null>(null);
 
   // Global Chat Effect
   useEffect(() => {
@@ -2910,22 +2979,52 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Top Bar */}
-            <div className="w-full max-w-md flex justify-between items-center mb-8 mt-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Привет, <span className="text-lime-400">{playerName}</span></h1>
-                <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mt-1">{clanId ? `<${clanId}>` : 'Одинокий волк'}</p>
+            {/* Character Info Bar */}
+            <div className="w-full max-w-md flex items-center justify-between mb-6 px-2 mt-4">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-2xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={avatarUrl || (playerGender === 'male' 
+                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
+                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
+                      }
+                      alt="Avatar" 
+                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-lime-400">{currentLevel}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Онлайн</span>
+                  </div>
+                </div>
               </div>
-              <button 
-                onClick={() => setPage(7)}
-                className="p-3 glass-card hover:bg-white/10 transition-colors relative"
-              >
-                <Mail className="w-5 h-5 text-zinc-300" />
-                <span className={`absolute top-0 right-0 w-3 h-3 border-2 border-zinc-950 rounded-full ${
-                  messages.some(m => !m.read) ? "bg-lime-400 animate-pulse" : "bg-zinc-700"
-                }`}></span>
-              </button>
+              <div className="flex items-center gap-2">
+                <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
+                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {/* Global News Ticker */}
+            {globalEvents.length > 0 && (
+              <div className="w-full max-w-md mb-6 bg-lime-400/5 border border-lime-400/10 rounded-2xl py-2 px-4 overflow-hidden relative">
+                <div className="flex items-center gap-3 animate-marquee whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-lime-400 uppercase tracking-widest flex-shrink-0">События:</span>
+                  <p className="text-[10px] text-zinc-300">
+                    {globalEvents[0].message}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Main Stats Ring (Sporty Vibe) */}
             <div className="w-full max-w-md flex justify-center mb-8">
@@ -4023,6 +4122,10 @@ export default function App() {
               <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-green-400">Темный Лес</h2>
             </div>
 
+            <div className="flex justify-center mb-4">
+              <LocationPlayers location="Лес" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
+            </div>
+
             <div className="flex-1 flex flex-col gap-2">
               <p className="text-zinc-400 text-center mb-4">Выберите противника для охоты:</p>
               
@@ -5028,12 +5131,15 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-white tracking-tight">🛒 Магазин</h2>
                 <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Торговая лавка</p>
               </div>
-              <button 
-                onClick={() => setPage(2)}
-                className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 rotate-180" />
-              </button>
+              <div className="flex items-center gap-2">
+                <LocationPlayers location="Магазин" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
+                <button 
+                  onClick={() => setPage(2)}
+                  className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 rotate-180" />
+                </button>
+              </div>
             </div>
 
             {/* Shop Tabs */}
@@ -5221,27 +5327,60 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex-1 bg-black/40 rounded-3xl border border-white/5 mb-4 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3">
-              {chatMessages.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
-                  Сообщений пока нет...
-                </div>
-              ) : (
-                chatMessages.map((msg) => (
-                  <div key={msg.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-900/80 flex-shrink-0 overflow-hidden border border-white/5">
-                      <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[10px] font-bold text-lime-300 uppercase tracking-widest">{msg.sender}</span>
-                        <span className="text-[8px] text-zinc-600">{msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
-                      </div>
-                      <p className="text-xs text-zinc-300 leading-relaxed">{msg.text}</p>
-                    </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 bg-black/40 rounded-3xl border border-white/5 mb-4 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+                {chatMessages.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
+                    Сообщений пока нет...
                   </div>
-                ))
-              )}
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="flex gap-3 group cursor-pointer" onClick={() => {
+                      // If we have a way to get UID from sender name, we could view profile
+                      // For now, just a visual hint
+                    }}>
+                      <div className="w-8 h-8 rounded-lg bg-zinc-900/80 flex-shrink-0 overflow-hidden border border-white/5">
+                        <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[10px] font-bold text-lime-300 uppercase tracking-widest">{msg.sender}</span>
+                          <span className="text-[8px] text-zinc-600">{msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
+                        </div>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{msg.text}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Online Users List */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Сейчас в сети ({onlineUsers.size})</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
+                  {Array.from(onlineUsers).map(uid => {
+                    // We don't have a map of UID to names here easily without fetching
+                    // But we can show a placeholder or just the count for now
+                    // Or better, let's just show the count and maybe a few names if we can
+                    return null;
+                  })}
+                  <div className="flex -space-x-2 overflow-hidden">
+                    {Array.from(onlineUsers).slice(0, 5).map((uid, i) => (
+                      <div key={uid} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
+                        {i + 1}
+                      </div>
+                    ))}
+                    {onlineUsers.size > 5 && (
+                      <div className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-900 flex items-center justify-center text-[8px] font-bold text-zinc-400">
+                        +{onlineUsers.size - 5}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -5369,6 +5508,11 @@ export default function App() {
               <button onClick={() => setPage(2)} className="absolute left-0 p-2 bg-white/5 rounded-full border border-white/5"><ChevronLeft className="w-6 h-6" /></button>
               <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-orange-400">Дуэль 1 на 1</h2>
             </div>
+
+            <div className="flex justify-center mb-4">
+              <LocationPlayers location="Арена" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
+            </div>
+
             <div className="flex-1 flex flex-col gap-4">
               <div className="p-6 bg-orange-900/10 border border-orange-500/20 rounded-3xl text-center">
                 <Swords className="w-12 h-12 text-orange-500 mx-auto mb-4" />
@@ -6194,6 +6338,10 @@ export default function App() {
                 <ChevronLeft className="w-6 h-6" />
               </button>
               <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-zinc-400">Поход в горы</h2>
+            </div>
+
+            <div className="flex justify-center mb-4">
+              <LocationPlayers location="Горы" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
             </div>
 
             <div className="flex-1 flex flex-col gap-2">

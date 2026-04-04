@@ -22,6 +22,7 @@ async function startServer() {
 
   const onlineUsers = new Map<string, string>(); // socket.id -> userId
   const userSockets = new Map<string, Set<string>>(); // userId -> Set of socket.ids
+  const userLocations = new Map<string, string>(); // userId -> location name
 
   // Socket.io logic
   io.on("connection", (socket) => {
@@ -37,6 +38,21 @@ async function startServer() {
       
       // Broadcast that this user is online
       io.emit("user_status", { userId, status: "online" });
+      
+      // Send current locations to the new user
+      const locations: Record<string, string> = {};
+      userLocations.forEach((loc, id) => {
+        locations[id] = loc;
+      });
+      socket.emit("all_locations", locations);
+    });
+
+    socket.on("user_location", (location) => {
+      const userId = onlineUsers.get(socket.id);
+      if (userId) {
+        userLocations.set(userId, location);
+        io.emit("user_location", { userId, location });
+      }
     });
 
     socket.on("get_online_users", (callback) => {

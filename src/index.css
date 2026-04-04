@@ -19,6 +19,12 @@
 @theme {
   --font-display: "Space Grotesk", sans-serif;
   --font-sans: "Inter", sans-serif;
+  --animate-marquee: marquee 20s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
 }
 
 body {
