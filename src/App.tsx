@@ -467,6 +467,27 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("rpg_is_logged_in") === "true");
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -4715,6 +4736,36 @@ export default function App() {
 
             <div className="space-y-4">
               <div className="p-4 bg-white/5 border border-white/5 rounded-3xl space-y-4">
+                <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Интерфейс</h4>
+                
+                <button 
+                  onClick={toggleFullscreen}
+                  className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-zinc-900/80 rounded-lg group-hover:bg-zinc-700 transition-colors">
+                      {isFullscreen ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 group-hover:text-white transition-colors"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 group-hover:text-white transition-colors"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
+                        {isFullscreen ? "Свернуть" : "На весь экран"}
+                      </p>
+                      <p className="text-[10px] text-zinc-500">
+                        {isFullscreen ? "Вернуться в оконный режим" : "Развернуть игру на весь экран"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors ${isFullscreen ? 'bg-lime-500' : 'bg-zinc-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isFullscreen ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </div>
+                </button>
+              </div>
+
+              <div className="p-4 bg-white/5 border border-white/5 rounded-3xl space-y-4">
                 <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Аккаунт</h4>
                 
                 <button 
@@ -4804,6 +4855,68 @@ export default function App() {
                   <ChevronRight className="w-4 h-4 text-red-900 group-hover:text-red-700 transition-colors" />
                 </button>
               </div>
+
+              {playerEmail === "alexeivasilev27081994@gmail.com" && (
+                <div className="p-4 bg-red-900/10 border border-red-500/20 rounded-3xl space-y-4">
+                  <h4 className="text-red-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                    <Shield className="w-4 h-4" /> Панель Администратора
+                  </h4>
+                  
+                  <button 
+                    onClick={async () => {
+                      if (window.confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕХ игроков? Это действие необратимо!")) {
+                        try {
+                          const usersSnapshot = await getDocs(collection(db, "users"));
+                          const deletePromises = usersSnapshot.docs.map(d => deleteDoc(d.ref));
+                          await Promise.all(deletePromises);
+                          toast.success(`Успешно удалено ${usersSnapshot.size} игроков`);
+                        } catch (error) {
+                          console.error("Error deleting users:", error);
+                          toast.error("Ошибка при удалении игроков");
+                        }
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-4 bg-red-500/10 border border-red-500/20 rounded-2xl hover:bg-red-500/20 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-950/80 rounded-lg group-hover:bg-red-900 transition-colors">
+                        <Users className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-red-400 group-hover:text-red-300 transition-colors">Удалить всех игроков</p>
+                        <p className="text-[10px] text-red-500/70">Очистить базу данных users</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={async () => {
+                      if (window.confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ кланы? Это действие необратимо!")) {
+                        try {
+                          const clansSnapshot = await getDocs(collection(db, "clans"));
+                          const deletePromises = clansSnapshot.docs.map(d => deleteDoc(d.ref));
+                          await Promise.all(deletePromises);
+                          toast.success(`Успешно удалено ${clansSnapshot.size} кланов`);
+                        } catch (error) {
+                          console.error("Error deleting clans:", error);
+                          toast.error("Ошибка при удалении кланов");
+                        }
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-4 bg-red-500/10 border border-red-500/20 rounded-2xl hover:bg-red-500/20 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-950/80 rounded-lg group-hover:bg-red-900 transition-colors">
+                        <Shield className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-red-400 group-hover:text-red-300 transition-colors">Удалить все кланы</p>
+                        <p className="text-[10px] text-red-500/70">Очистить базу данных clans</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
