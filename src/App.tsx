@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
+import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert, Info, Home, Palette } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
@@ -1817,9 +1817,24 @@ export default function App() {
   return (
     <div 
       ref={scrollContainerRef}
-      className="min-h-[100dvh] overflow-x-hidden relative bg-gradient-to-b from-zinc-950 via-zinc-900 to-black"
+      className="min-h-[100dvh] overflow-x-hidden relative bg-animated text-white font-sans pb-safe pt-safe"
     >
-      <Toaster theme="dark" position="top-center" />
+      <div className="particles">
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div 
+            key={i} 
+            className="particle" 
+            style={{ 
+              left: `${Math.random() * 100}%`, 
+              width: `${Math.random() * 4 + 1}px`, 
+              height: `${Math.random() * 4 + 1}px`, 
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${Math.random() * 10 + 10}s`
+            }} 
+          />
+        ))}
+      </div>
+      <Toaster theme="dark" position="top-center" toastOptions={{ className: 'glass-panel border-white/10 text-white' }} />
       
       {authError === 'auth/admin-restricted-operation' && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-3 shadow-lg animate-in slide-in-from-top duration-500">
@@ -3065,24 +3080,36 @@ export default function App() {
             </div>
 
             {/* Character Info Block */}
-            <div className="mt-6 glass-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 flex flex-col gap-4 shadow-xl">
+            <div className="mt-6 glass-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-5 flex flex-col gap-5 shadow-xl relative overflow-hidden">
+              {/* Decorative Background Elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/5 rounded-full blur-2xl -ml-8 -mb-8 pointer-events-none" />
+
               {/* Header: Name & Role */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
-                    {realName || "Алексей"}
-                  </h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-300 border border-lime-400/30">
-                    {clanRole || "Новичок"}
-                  </span>
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
+                      {realName || "Алексей"}
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-300 border border-lime-400/30">
+                      {clanRole || "Новичок"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-medium tracking-wide">ID: {auth.currentUser?.uid?.substring(0, 8) || "UNKNOWN"}</span>
                 </div>
 
                 {/* Online Status Indicator */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5">
-                  <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${isOnline ? 'text-green-400' : 'text-zinc-500'}`}>
-                    {isOnline ? "В сети" : (
-                      (() => {
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/5 shadow-inner">
+                    <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isOnline ? 'text-green-400' : 'text-zinc-500'}`}>
+                      {isOnline ? "В сети" : "Офлайн"}
+                    </span>
+                  </div>
+                  {!isOnline && (
+                    <span className="text-[9px] text-zinc-500">
+                      {(() => {
                         const now = new Date();
                         const diff = now.getTime() - lastSeen.getTime();
                         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -3091,70 +3118,88 @@ export default function App() {
                         const hours = lastSeen.getHours().toString().padStart(2, '0');
                         const minutes = lastSeen.getMinutes().toString().padStart(2, '0');
                         return `Был в ${hours}:${minutes}`;
-                      })()
-                    )}
-                  </span>
+                      })()}
+                    </span>
+                  )}
                 </div>
               </div>
 
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-1" />
+
               {/* Clan & Level Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/40 rounded-2xl p-3 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Клан</span>
+              <div className="grid grid-cols-2 gap-4 relative z-10">
+                <div className="bg-black/40 rounded-2xl p-4 border border-white/5 flex flex-col gap-2 hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setPage(10)}>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-white/5 rounded-lg group-hover:bg-lime-400/20 transition-colors">
+                      <Shield className="w-4 h-4 text-zinc-400 group-hover:text-lime-400 transition-colors" />
+                    </div>
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Клан</span>
+                  </div>
                   {clanName ? (
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-lime-300 flex items-center gap-1">
-                        <Shield className="w-3 h-3" /> {clanName}
+                      <span className="text-sm font-bold text-lime-300 truncate">
+                        {clanName}
                       </span>
-                      <span className="text-[10px] text-zinc-400 font-medium">5 Уровень</span>
+                      <span className="text-[10px] text-zinc-400 font-medium mt-0.5">Ранг: {clanRole || "Участник"}</span>
                     </div>
                   ) : (
-                    <span className="text-sm font-medium text-zinc-400 italic text-[11px]">не состоит в клане</span>
+                    <span className="text-sm font-medium text-zinc-400 italic text-[11px] mt-1">Не состоит в клане</span>
                   )}
                 </div>
 
-                <div className="bg-black/40 rounded-2xl p-3 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Прогресс</span>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-white uppercase tracking-tighter">
-                      Уровень {currentLevel || 3}
-                    </span>
-                    <div className="w-full h-1 bg-zinc-900/80 rounded-full mt-1 overflow-hidden">
+                <div className="bg-black/40 rounded-2xl p-4 border border-white/5 flex flex-col gap-2 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-lime-400/10 rounded-full blur-xl -mr-8 -mt-8" />
+                  <div className="flex items-center gap-2 relative z-10">
+                    <div className="p-1.5 bg-white/5 rounded-lg">
+                      <Star className="w-4 h-4 text-lime-400" />
+                    </div>
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Прогресс</span>
+                  </div>
+                  <div className="flex flex-col relative z-10 mt-1">
+                    <div className="flex justify-between items-end mb-1.5">
+                      <span className="text-sm font-black text-white uppercase tracking-tighter leading-none">
+                        Уровень {currentLevel || 3}
+                      </span>
+                      <span className="text-[9px] text-lime-400 font-bold">{Math.round(xpPercentage)}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-zinc-900/80 rounded-full overflow-hidden border border-white/5">
                       <div 
-                        className="h-full bg-lime-400" 
+                        className="h-full bg-gradient-to-r from-lime-500 to-lime-300 relative" 
                         style={{ width: `${xpPercentage}%` }} 
-                      />
+                      >
+                        <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" style={{ transform: 'skewX(-20deg)' }} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Race & Badges */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 text-zinc-200">
+              <div className="flex flex-wrap items-center gap-2 relative z-10 pt-1">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-zinc-200 shadow-sm">
                   {playerRace === "Эльф" ? <Wind className="w-4 h-4 text-green-400" /> :
                    playerRace === "Орк" ? <Swords className="w-4 h-4 text-red-400" /> :
                    playerRace === "Гном" ? <Mountain className="w-4 h-4 text-lime-600" /> :
                    playerRace === "Нежить" ? <Snowflake className="w-4 h-4 text-blue-300" /> :
                    <User className="w-4 h-4 text-lime-300" />}
-                  <span className="text-xs font-bold uppercase tracking-widest">
+                  <span className="text-[11px] font-bold uppercase tracking-widest">
                     {playerRace || "Человек"}
                   </span>
                 </div>
 
                 {playerBadges.includes('admin') && (
-                  <div className="p-1.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400">
+                  <div className="p-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 shadow-sm" title="Администратор">
                     <Crown className="w-4 h-4" />
                   </div>
                 )}
                 {isCreator && (
-                  <div className="p-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1 px-2">
+                  <div className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1.5 px-2.5 shadow-sm" title="Создатель игры">
                     <ShieldCheck className="w-4 h-4" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Создатель</span>
                   </div>
                 )}
                 {playerBadges.includes('verified') && (
-                  <div className="p-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400">
+                  <div className="p-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 shadow-sm" title="Верифицированный игрок">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                 )}
@@ -3163,40 +3208,40 @@ export default function App() {
             </div>
 
             {/* Identity Grid - Compact & Stylish */}
-            <div className="flex justify-between items-center gap-1 mt-4 bg-white/5 border border-white/5 rounded-2xl p-2 w-full">
-              <div className="flex-1 flex items-center gap-2 pl-1">
-                <div className={`w-7 h-7 rounded-lg ${playerGender === 'male' ? 'bg-blue-500/10' : 'bg-pink-500/10'} flex items-center justify-center shrink-0`}>
-                  {playerGender === 'male' ? <Mars className="w-3.5 h-3.5 text-blue-400" /> : <Venus className="w-3.5 h-3.5 text-pink-400" />}
+            <div className="flex justify-between items-center gap-2 mt-4 bg-white/5 border border-white/10 rounded-2xl p-3 w-full shadow-lg">
+              <div className="flex-1 flex items-center gap-3 pl-2">
+                <div className={`w-8 h-8 rounded-xl ${playerGender === 'male' ? 'bg-blue-500/15 border-blue-500/30' : 'bg-pink-500/15 border-pink-500/30'} border flex items-center justify-center shrink-0 shadow-inner`}>
+                  {playerGender === 'male' ? <Mars className="w-4 h-4 text-blue-400" /> : <Venus className="w-4 h-4 text-pink-400" />}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Пол</span>
-                  <span className={`text-[10px] font-bold truncate ${playerGender === 'male' ? 'text-blue-300' : 'text-pink-300'}`}>
+                  <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-1">Пол</span>
+                  <span className={`text-[11px] font-bold truncate ${playerGender === 'male' ? 'text-blue-300' : 'text-pink-300'}`}>
                     {playerGender === 'male' ? 'Мужской' : 'Женский'}
                   </span>
                 </div>
               </div>
               
-              <div className="w-px h-6 bg-white/10 shrink-0" />
+              <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent shrink-0" />
               
-              <div className="flex-1 flex items-center gap-2 px-1">
-                <div className="w-7 h-7 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="flex-1 flex items-center gap-3 px-2">
+                <div className="w-8 h-8 rounded-xl bg-zinc-500/15 border border-zinc-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                  <CalendarDays className="w-4 h-4 text-zinc-400" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Возраст</span>
-                  <span className="text-[10px] font-bold text-zinc-200 truncate">{playerAge} лет</span>
+                  <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-1">Возраст</span>
+                  <span className="text-[11px] font-bold text-zinc-200 truncate">{playerAge} лет</span>
                 </div>
               </div>
               
-              <div className="w-px h-6 bg-white/10 shrink-0" />
+              <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent shrink-0" />
               
-              <div className="flex-1 flex items-center gap-2 pr-1">
-                <div className="w-7 h-7 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="flex-1 flex items-center gap-3 pr-2">
+                <div className="w-8 h-8 rounded-xl bg-zinc-500/15 border border-zinc-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                  <MapPin className="w-4 h-4 text-zinc-400" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Страна</span>
-                  <span className="text-[10px] font-bold text-zinc-200 truncate">{isCountryHidden ? "••••••••" : country}</span>
+                  <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-1">Страна</span>
+                  <span className="text-[11px] font-bold text-zinc-200 truncate">{isCountryHidden ? "••••••••" : country}</span>
                 </div>
               </div>
             </div>
@@ -5414,6 +5459,51 @@ export default function App() {
                   <span className="text-[8px] text-zinc-500 uppercase block mb-1">Очки сезона</span>
                   <span className="text-sm font-bold text-white">1250</span>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Navigation */}
+      <AnimatePresence>
+        {[2, 3, 7, 9, 10].includes(page) && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-40 pb-safe"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+            <div className="relative max-w-md mx-auto px-4 pb-4 pt-8">
+              <div className="glass-panel rounded-3xl p-2 flex items-center justify-between relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/5 mix-blend-overlay" />
+                
+                <button onClick={() => setPage(2)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 2 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                  <Home className="w-6 h-6 mb-1" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Лобби</span>
+                </button>
+                
+                <button onClick={() => setPage(3)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 3 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                  <User className="w-6 h-6 mb-1" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Герой</span>
+                </button>
+                
+                <button onClick={() => setPage(9)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 9 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                  <ScrollText className="w-6 h-6 mb-1" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Миссии</span>
+                </button>
+                
+                <button onClick={() => setPage(10)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 10 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                  <Flag className="w-6 h-6 mb-1" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Клан</span>
+                </button>
+                
+                <button onClick={() => setPage(7)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 7 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
+                  <ShoppingBag className="w-6 h-6 mb-1" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Магазин</span>
+                </button>
               </div>
             </div>
           </motion.div>
