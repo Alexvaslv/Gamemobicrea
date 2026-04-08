@@ -843,6 +843,9 @@ export default function App() {
     };
   });
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
+  const [inventoryFilterType, setInventoryFilterType] = useState<string>("all");
+  const [inventoryFilterRarity, setInventoryFilterRarity] = useState<string>("all");
+  const [inventorySortOrder, setInventorySortOrder] = useState<'asc' | 'desc' | 'none'>('none');
   const [lastXpGained, setLastXpGained] = useState(0);
   const [forestProgress, setForestProgress] = useState(() => parseInt(localStorage.getItem("rpg_forest_progress") || "0", 10) || 0);
   const [mountainProgress, setMountainProgress] = useState(() => parseInt(localStorage.getItem("rpg_mountain_progress") || "0", 10) || 0);
@@ -2738,7 +2741,7 @@ export default function App() {
                   </div>
                 </button>
                 <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
-                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                <button id="settings-button" onClick={() => setPage(11)} className="p-2.5 bg-lime-400 text-lime-950 border border-lime-400/50 rounded-2xl hover:bg-lime-300 transition-colors shadow-lg shadow-lime-400/20">
                   <Settings className="w-5 h-5" />
                 </button>
               </div>
@@ -3529,9 +3532,79 @@ export default function App() {
                         </div>
                       )}
 
+                      {/* Filters and Sort */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 flex-1">
+                            {['all', 'weapon', 'armor', 'elixir', 'book', 'chest'].map(type => (
+                              <button
+                                key={type}
+                                onClick={() => setInventoryFilterType(type)}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+                                  inventoryFilterType === type 
+                                    ? 'bg-lime-400 text-lime-950 shadow-[0_0_10px_rgba(163,230,53,0.3)]' 
+                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
+                                }`}
+                              >
+                                {type === 'all' ? 'Все типы' : 
+                                 type === 'weapon' ? 'Оружие' : 
+                                 type === 'armor' ? 'Броня' : 
+                                 type === 'elixir' ? 'Эликсиры' : 
+                                 type === 'book' ? 'Книги' : 'Сундуки'}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => setInventorySortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none')}
+                            className={`p-1.5 rounded-xl border transition-all shrink-0 flex items-center justify-center ${
+                              inventorySortOrder !== 'none' 
+                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                                : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
+                            }`}
+                            title="Сортировка по имени"
+                          >
+                            <ArrowLeft className={`w-4 h-4 transition-transform ${inventorySortOrder === 'desc' ? '-rotate-90' : 'rotate-90'}`} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                          {['all', 'common', 'rare', 'epic', 'legendary'].map(rarity => (
+                            <button
+                              key={rarity}
+                              onClick={() => setInventoryFilterRarity(rarity)}
+                              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+                                inventoryFilterRarity === rarity 
+                                  ? 'bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.3)]' 
+                                  : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              {rarity === 'all' ? 'Любая редкость' : 
+                               rarity === 'common' ? 'Обычный' : 
+                               rarity === 'rare' ? 'Редкий' : 
+                               rarity === 'epic' ? 'Эпический' : 'Легендарный'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Grid */}
                       <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                        {ITEMS.map((item, idx) => {
+                        {ITEMS.map((item, idx) => ({ item, idx }))
+                          .filter(({ item }) => {
+                            if (inventoryFilterType !== 'all' && item.type !== inventoryFilterType) return false;
+                            if (inventoryFilterRarity !== 'all' && item.rarity !== inventoryFilterRarity) return false;
+                            return true;
+                          })
+                          .sort((a, b) => {
+                            if (inventorySortOrder === 'none') return 0;
+                            const nameA = `Предмет #${a.idx + 1}`;
+                            const nameB = `Предмет #${b.idx + 1}`;
+                            if (inventorySortOrder === 'asc') {
+                              return nameA.localeCompare(nameB, 'ru', { numeric: true });
+                            } else {
+                              return nameB.localeCompare(nameA, 'ru', { numeric: true });
+                            }
+                          })
+                          .map(({ item, idx }) => {
                           const isSelected = selectedItemIdx === idx;
                           
                           const rarityColors = {
@@ -3883,162 +3956,205 @@ export default function App() {
         {page === 10 && (
           <motion.div
             key="page10"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
+            className="min-h-[100dvh] flex flex-col p-4 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {/* Header */}
-            <div className="flex items-center mb-8 relative mt-4">
+            <div className="flex items-center justify-between mb-8 mt-2">
               <button 
                 onClick={() => setPage(2)} 
-                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
+                className="p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 active:scale-95"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-6 h-6 text-zinc-400" />
               </button>
-              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-lime-300">Мой клан</h2>
+              <div className="text-center">
+                <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white">Клан</h2>
+                <div className="h-1 w-12 bg-lime-400 mx-auto mt-1 rounded-full shadow-[0_0_10px_rgba(163,230,53,0.5)]" />
+              </div>
+              <div className="w-11" /> {/* Spacer for centering */}
             </div>
 
-            <div className="flex-1 flex flex-col gap-3">
+            <div className="flex-1 flex flex-col gap-4">
               {clan ? (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full gap-4">
                   {/* Clan Tabs */}
-                  <div className="flex gap-2 mb-6">
+                  <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <button 
                       onClick={() => setClanTab("info")}
-                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        clanTab === "info" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
+                      className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                        clanTab === "info" ? "bg-lime-400 text-lime-950 shadow-lg shadow-lime-400/20" : "text-zinc-500 hover:text-zinc-300"
                       }`}
                     >
+                      <Info className="w-3 h-3" />
                       Инфо
                     </button>
                     <button 
                       onClick={() => setClanTab("members")}
-                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        clanTab === "members" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
+                      className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                        clanTab === "members" ? "bg-lime-400 text-lime-950 shadow-lg shadow-lime-400/20" : "text-zinc-500 hover:text-zinc-300"
                       }`}
                     >
+                      <Users className="w-3 h-3" />
                       Участники
                     </button>
                     {(clan.leader === playerName) && (
                       <button 
                         onClick={() => setClanTab("manage")}
-                        className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                          clanTab === "manage" ? "bg-red-500/20 border-red-500/50 text-red-400" : "bg-white/5 border-white/5 text-zinc-500"
+                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                          clanTab === "manage" ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-zinc-500 hover:text-zinc-300"
                         }`}
                       >
+                        <Settings className="w-3 h-3" />
                         Управление
                       </button>
                     )}
                   </div>
 
                   {clanTab === "info" && (
-                    <div className="bg-white/5  border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="w-20 h-20 rounded-full bg-lime-900/20 border-2 border-lime-400/30 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.1)] overflow-hidden">
-                        {clan.avatarUrl ? (
-                          <img src={clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <Shield className="w-10 h-10 text-lime-300" />
-                        )}
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-1">{clan.name}</h3>
-                      <div className="flex items-center gap-2 mb-6">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${
-                          clan.leader === playerName ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-zinc-500/10 border-zinc-500/30 text-zinc-400"
-                        }`}>
-                          {clan.leader === playerName ? "Лидер" : "Участник"}
-                        </span>
-                        {clan.settings?.isPrivate && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 text-blue-400 uppercase tracking-widest">Закрытый</span>
-                        )}
-                      </div>
-                      
-                      <div className="w-full grid grid-cols-2 gap-2 mb-6">
-                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Участники</div>
-                          <div className="text-base font-bold text-white">{clan.members?.length || 0} / 50</div>
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="bg-white/5 border border-white/5 rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden group">
+                        {/* Background Decoration */}
+                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-lime-400/10 to-transparent opacity-50" />
+                        
+                        <div className="w-24 h-24 rounded-full bg-zinc-900 border-4 border-white/5 flex items-center justify-center mb-4 shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-500">
+                          {clan.avatarUrl ? (
+                            <img src={clan.avatarUrl} alt="Crest" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                          ) : (
+                            <Shield className="w-12 h-12 text-lime-400" />
+                          )}
+                          <div className="absolute -bottom-1 -right-1 bg-lime-400 text-lime-950 text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900">
+                            LVL {clan.level}
+                          </div>
                         </div>
-                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Уровень</div>
-                          <div className="text-base font-bold text-white">{clan.level}</div>
+
+                        <h3 className="text-2xl font-black text-white mb-1 tracking-tight">{clan.name}</h3>
+                        
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${
+                            clan.leader === playerName ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                          }`}>
+                            {clan.leader === playerName ? <Crown className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                            {clan.leader === playerName ? "Лидер" : "Участник"}
+                          </div>
+                          {clan.settings?.isPrivate && (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-500/30 text-zinc-400 bg-zinc-500/10 text-[10px] font-black uppercase tracking-widest">
+                              <Lock className="w-3 h-3" />
+                              Закрытый
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-zinc-400 text-xs leading-relaxed max-w-[80%] mb-6 italic">
+                          "{clan.description || "У этого клана пока нет описания..."}"
+                        </p>
+                        
+                        <div className="w-full grid grid-cols-2 gap-3 mb-2">
+                          <div className="bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex flex-col items-center">
+                            <Users className="w-4 h-4 text-zinc-500 mb-1" />
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-1">Состав</div>
+                            <div className="text-lg font-black text-white">{clan.members?.length || 0}<span className="text-zinc-600 text-xs font-medium ml-1">/ 50</span></div>
+                          </div>
+                          <div className="bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex flex-col items-center">
+                            <Trophy className="w-4 h-4 text-lime-400 mb-1" />
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-1">Рейтинг</div>
+                            <div className="text-lg font-black text-white">#{Math.floor(Math.random() * 100) + 1}</div>
+                          </div>
                         </div>
                       </div>
 
-                      {!showClanLeaveConfirm ? (
-                        <button 
-                          onClick={() => setShowClanLeaveConfirm(true)}
-                          className="text-red-400 text-xs font-bold uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-2"
-                        >
-                          <LogOut className="w-3 h-3" /> Покинуть клан
-                        </button>
-                      ) : (
-                        <div className="flex flex-col items-center gap-3">
-                          <p className="text-red-400 text-xs font-bold">Вы уверены?</p>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  const user = auth.currentUser;
-                                  const docId = user ? user.uid : playerName;
-                                  
-                                  // Update user
-                                  await setDoc(doc(db, "users", docId), { clanId: null }, { merge: true });
-                                  
-                                  // Update clan members
-                                  const updatedMembers = clan.members.filter((m: any) => (m.nickname || m) !== playerName);
-                                  await updateDoc(doc(db, "clans", clanId!), { members: updatedMembers });
-                                  
-                                  setClanId(null);
-                                  setClan(null);
-                                  setShowClanLeaveConfirm(false);
-                                  toast.info("Вы покинули клан");
-                                } catch (error) {
-                                  handleFirestoreError(error, OperationType.UPDATE, `clans/${clanId}`);
-                                }
-                              }}
-                              className="px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-all"
-                            >
-                              Да, покинуть
-                            </button>
-                            <button 
-                              onClick={() => setShowClanLeaveConfirm(false)}
-                              className="px-3 py-2 bg-zinc-900/80 border border-white/5 rounded-lg text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all"
-                            >
-                              Отмена
-                            </button>
+                      <div className="flex flex-col items-center gap-4 mt-2">
+                        {!showClanLeaveConfirm ? (
+                          <button 
+                            onClick={() => setShowClanLeaveConfirm(true)}
+                            className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-all text-[10px] font-black uppercase tracking-widest"
+                          >
+                            <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            Покинуть клан
+                          </button>
+                        ) : (
+                          <div className="w-full p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+                            <div className="text-center">
+                              <p className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">Вы уверены?</p>
+                              <p className="text-red-500/60 text-[10px]">Вы потеряете все клановые бонусы</p>
+                            </div>
+                            <div className="flex gap-3 w-full">
+                              <button 
+                                onClick={async () => {
+                                  try {
+                                    const user = auth.currentUser;
+                                    const docId = user ? user.uid : playerName;
+                                    await setDoc(doc(db, "users", docId), { clanId: null }, { merge: true });
+                                    const updatedMembers = clan.members.filter((m: any) => (m.nickname || m) !== playerName);
+                                    await updateDoc(doc(db, "clans", clanId!), { members: updatedMembers });
+                                    setClanId(null);
+                                    setClan(null);
+                                    setShowClanLeaveConfirm(false);
+                                    toast.info("Вы покинули клан");
+                                  } catch (error) {
+                                    handleFirestoreError(error, OperationType.UPDATE, `clans/${clanId}`);
+                                  }
+                                }}
+                                className="flex-1 py-3 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+                              >
+                                Да, покинуть
+                              </button>
+                              <button 
+                                onClick={() => setShowClanLeaveConfirm(false)}
+                                className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700 transition-all"
+                              >
+                                Отмена
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   )}
 
                   {clanTab === "members" && (
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300 custom-scrollbar">
+                      <div className="flex items-center justify-between px-2 mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Участник</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Действия</span>
+                      </div>
                       {clan.members?.map((member: any, idx: number) => {
                         const mNickname = member.nickname || member;
                         const mRole = member.role || (mNickname === clan.leader ? "leader" : "member");
                         const isMeLeader = clan.leader === playerName;
+                        const isMe = mNickname === playerName;
                         
                         return (
-                          <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
+                          <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:bg-white/10 transition-all">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-zinc-900/80 flex items-center justify-center text-zinc-400 font-bold text-xs border border-white/5">
-                                {mNickname[0]}
+                              <div className="relative">
+                                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 font-black text-sm border border-white/10 overflow-hidden">
+                                  {member.avatarUrl ? (
+                                    <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    mNickname[0].toUpperCase()
+                                  )}
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-900 shadow-sm" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="font-bold text-zinc-200">{mNickname}</span>
-                                <span className={`text-[9px] uppercase tracking-widest ${
-                                  mRole === 'leader' ? 'text-red-400' : mRole === 'officer' ? 'text-lime-300' : 'text-zinc-500'
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`font-bold text-sm ${isMe ? 'text-lime-400' : 'text-zinc-200'}`}>{mNickname}</span>
+                                  {mRole === 'leader' && <Crown className="w-3 h-3 text-red-400" />}
+                                </div>
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${
+                                  mRole === 'leader' ? 'text-red-400' : mRole === 'officer' ? 'text-lime-400' : 'text-zinc-500'
                                 }`}>
                                   {mRole === 'leader' ? "Лидер" : mRole === 'officer' ? "Офицер" : "Участник"}
                                 </span>
                               </div>
                             </div>
+                            
                             <div className="flex items-center gap-2">
-                              {mRole === 'leader' && <Crown className="w-4 h-4 text-red-400" />}
-                              {isMeLeader && mNickname !== playerName && (
-                                <div className="flex gap-1">
+                              {isMeLeader && !isMe && (
+                                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                   {mRole === 'member' && (
                                     <button 
                                       onClick={async () => {
@@ -4048,10 +4164,10 @@ export default function App() {
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
                                         toast.success(`${mNickname} назначен офицером`);
                                       }}
-                                      className="p-1.5 bg-lime-400/10 border border-lime-400/20 rounded text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
-                                      title="Повысить до офицера"
+                                      className="p-2 bg-lime-400/10 border border-lime-400/20 rounded-xl text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
+                                      title="Повысить"
                                     >
-                                      <TrendingUp className="w-3 h-3" />
+                                      <TrendingUp className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   {mRole === 'officer' && (
@@ -4061,12 +4177,12 @@ export default function App() {
                                           (m.nickname || m) === mNickname ? { ...m, role: 'member' } : m
                                         );
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
-                                        toast.info(`${mNickname} разжалован до участника`);
+                                        toast.info(`${mNickname} разжалован`);
                                       }}
-                                      className="p-1.5 bg-zinc-900/80 border border-white/5 rounded text-zinc-400 hover:bg-zinc-700 transition-all"
+                                      className="p-2 bg-zinc-800 border border-white/5 rounded-xl text-zinc-400 hover:bg-zinc-700 transition-all"
                                       title="Разжаловать"
                                     >
-                                      <Minus className="w-3 h-3" />
+                                      <TrendingDown className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   <button 
@@ -4074,21 +4190,22 @@ export default function App() {
                                       if (confirm(`Вы уверены, что хотите исключить ${mNickname}?`)) {
                                         const newMembers = clan.members.filter((m: any) => (m.nickname || m) !== mNickname);
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
-                                        // Also need to update the user's clanId in their doc
                                         const targetUid = member.uid;
                                         if (targetUid) {
                                           await updateDoc(doc(db, "users", targetUid), { clanId: null });
                                         }
-                                        toast.error(`${mNickname} исключен из клана`);
+                                        toast.error(`${mNickname} исключен`);
                                       }
                                     }}
-                                    className="p-1.5 bg-red-500/10 border border-red-500/20 rounded text-red-500 hover:bg-red-500 hover:text-red-950 transition-all"
+                                    className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all"
                                     title="Исключить"
                                   >
-                                    <X className="w-3 h-3" />
+                                    <UserMinus className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               )}
+                              {mRole === 'leader' && !isMeLeader && <Crown className="w-4 h-4 text-red-400/50" />}
+                              {isMe && <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.5)]" />}
                             </div>
                           </div>
                         );
@@ -4097,105 +4214,122 @@ export default function App() {
                   )}
 
                   {clanTab === "manage" && (
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                        <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
-                          <Shield className="w-3 h-3" /> Герб клана
-                        </h4>
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center overflow-hidden">
+                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-300 custom-scrollbar">
+                      {/* Visuals Section */}
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="p-1.5 bg-lime-400/10 rounded-lg">
+                            <Palette className="w-4 h-4 text-lime-400" />
+                          </div>
+                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-black">Внешний вид</h4>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
                             {clanAvatarUrl || clan.avatarUrl ? (
                               <img src={clanAvatarUrl || clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <Shield className="w-8 h-8 text-zinc-600" />
+                              <Shield className="w-10 h-10 text-zinc-800" />
                             )}
                           </div>
-                          <div className="flex-1 space-y-2">
-                            <input 
-                              type="text" 
-                              placeholder="URL герба..."
-                              value={clanAvatarUrl}
-                              onChange={(e) => setClanAvatarUrl(e.target.value)}
-                              className="w-full bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-lime-400/50 transition-colors"
-                            />
+                          <div className="flex-1 space-y-3">
+                            <div className="space-y-1">
+                              <p className="text-[10px] text-zinc-500 font-bold uppercase ml-1">URL герба</p>
+                              <input 
+                                type="text" 
+                                placeholder="https://..."
+                                value={clanAvatarUrl}
+                                onChange={(e) => setClanAvatarUrl(e.target.value)}
+                                className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-lime-400/50 transition-all placeholder:text-zinc-700"
+                              />
+                            </div>
                             <button 
                               onClick={async () => {
                                 await updateDoc(doc(db, "clans", clanId!), { avatarUrl: clanAvatarUrl });
-                                toast.success("Герб обновлен");
+                                toast.success("Герб успешно обновлен");
                               }}
-                              className="w-full py-1.5 bg-lime-400/20 border border-lime-400/50 rounded-lg text-lime-300 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400/30 transition-all"
+                              className="w-full py-2.5 bg-lime-400 text-lime-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-lime-300 transition-all shadow-lg shadow-lime-400/10"
                             >
-                              Сохранить герб
+                              Обновить герб
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                        <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
-                          <Settings className="w-3 h-3" /> Настройки вступления
-                        </h4>
+                      {/* Recruitment Section */}
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="p-1.5 bg-blue-400/10 rounded-lg">
+                            <UserPlus className="w-4 h-4 text-blue-400" />
+                          </div>
+                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-black">Набор в клан</h4>
+                        </div>
+
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5">
                             <div>
-                              <p className="text-xs font-bold text-zinc-200">Минимальный уровень</p>
-                              <p className="text-[10px] text-zinc-500">Порог для вступления</p>
+                              <p className="text-xs font-black text-zinc-200 uppercase tracking-wide">Минимальный уровень</p>
+                              <p className="text-[9px] text-zinc-500 uppercase font-bold">Порог вступления</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">-</button>
-                              <span className="text-sm font-bold text-lime-300 w-6 text-center">{clanMinLevel}</span>
-                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">+</button>
+                            <div className="flex items-center gap-3 bg-zinc-900 rounded-xl p-1 border border-white/5">
+                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">-</button>
+                              <span className="text-sm font-black text-lime-400 w-6 text-center">{clanMinLevel}</span>
+                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">+</button>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between">
+
+                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5">
                             <div>
-                              <p className="text-xs font-bold text-zinc-200">Закрытый клан</p>
-                              <p className="text-[10px] text-zinc-500">Только по приглашению</p>
+                              <p className="text-xs font-black text-zinc-200 uppercase tracking-wide">Тип клана</p>
+                              <p className="text-[9px] text-zinc-500 uppercase font-bold">{isClanPrivate ? "Только по приглашению" : "Свободный вход"}</p>
                             </div>
                             <button 
                               onClick={() => setIsClanPrivate(!isClanPrivate)}
-                              className={`w-10 h-5 rounded-full relative transition-colors ${isClanPrivate ? 'bg-lime-400' : 'bg-zinc-900/80'}`}
+                              className={`w-12 h-6 rounded-full relative transition-all duration-300 ${isClanPrivate ? 'bg-blue-500' : 'bg-zinc-800'}`}
                             >
-                              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isClanPrivate ? 'left-6' : 'left-1'}`} />
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isClanPrivate ? 'left-7' : 'left-1'}`} />
                             </button>
                           </div>
+
                           <button 
                             onClick={async () => {
                               await updateDoc(doc(db, "clans", clanId!), { 
                                 settings: { minLevel: clanMinLevel, isPrivate: isClanPrivate } 
                               });
-                              toast.success("Настройки сохранены");
+                              toast.success("Настройки набора сохранены");
                             }}
-                            className="w-full py-2 bg-lime-400 text-lime-950 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-lime-300 transition-all"
+                            className="w-full py-3 bg-white/5 border border-white/10 text-zinc-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
                           >
-                            Применить настройки
+                            Сохранить настройки
                           </button>
                         </div>
                       </div>
 
-                      <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-4">
-                        <h4 className="text-[10px] uppercase tracking-widest text-red-400 font-bold mb-2 flex items-center gap-2">
-                          <Ban className="w-3 h-3" /> Опасная зона
-                        </h4>
-                        <p className="text-[10px] text-zinc-500 mb-4">Расформирование клана удалит все данные без возможности восстановления.</p>
+                      {/* Danger Zone */}
+                      <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1.5 bg-red-500/10 rounded-lg">
+                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                          </div>
+                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-red-500/70 font-black">Опасная зона</h4>
+                        </div>
+                        <p className="text-[10px] text-zinc-600 mb-4 font-medium leading-relaxed">Расформирование клана удалит все данные, достижения и распустит всех участников без возможности восстановления.</p>
                         <button 
                           onClick={async () => {
-                            if (confirm("ВЫ УВЕРЕНЫ? Клан будет удален навсегда!")) {
-                              // 1. Remove clanId from all members
+                            if (confirm("ВНИМАНИЕ! Клан будет удален навсегда! Вы уверены?")) {
                               for (const member of clan.members) {
                                 const mUid = member.uid;
                                 if (mUid) {
                                   await updateDoc(doc(db, "users", mUid), { clanId: null });
                                 }
                               }
-                              // 2. Delete clan doc
                               await deleteDoc(doc(db, "clans", clanId!));
                               setClanId(null);
                               setClan(null);
-                              toast.error("Клан расформирован");
+                              toast.error("Клан был расформирован");
                             }
                           }}
-                          className="w-full py-2 border border-red-500/50 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                          className="w-full py-3 border border-red-500/30 rounded-xl text-red-500/60 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
                         >
                           Расформировать клан
                         </button>
@@ -4204,30 +4338,79 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center mb-4">
-                      <Users className="w-8 h-8 text-zinc-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2">Вы не состоите в клане</h3>
-                    <p className="text-zinc-400 text-sm">Вступайте в клан, чтобы участвовать в битвах и получать бонусы!</p>
-                  </div>
+                <div className="flex-1 flex flex-col gap-4 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {!isCreatingClan && !isJoiningClan ? (
+                    <div className="flex flex-col gap-6">
+                      <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center text-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-lime-400/5 via-transparent to-purple-500/5" />
+                        <div className="w-24 h-24 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative z-10">
+                          <Users className="w-10 h-10 text-zinc-600" />
+                          <div className="absolute inset-0 rounded-full border-2 border-dashed border-zinc-800 animate-[spin_10s_linear_infinite]" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white mb-3 tracking-tight relative z-10">Путь одиночки?</h3>
+                        <p className="text-zinc-400 text-sm leading-relaxed mb-8 relative z-10">
+                          Вступайте в клан, чтобы объединить силы с другими игроками, участвовать в масштабных битвах и получать уникальные бонусы!
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-3 w-full relative z-10">
+                          <button 
+                            onClick={() => setIsJoiningClan(true)}
+                            className="flex flex-col items-center justify-center gap-3 p-5 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/20 transition-all group"
+                          >
+                            <div className="p-3 bg-zinc-900 rounded-2xl group-hover:scale-110 transition-transform">
+                              <Search className="w-5 h-5 text-zinc-400 group-hover:text-white" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Найти клан</span>
+                          </button>
+                          <button 
+                            onClick={() => setIsCreatingClan(true)}
+                            className="flex flex-col items-center justify-center gap-3 p-5 bg-lime-400/5 border border-lime-400/10 rounded-3xl hover:bg-lime-400/10 hover:border-lime-400/20 transition-all group"
+                          >
+                            <div className="p-3 bg-lime-400/20 rounded-2xl group-hover:scale-110 transition-transform">
+                              <Plus className="w-5 h-5 text-lime-400" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-lime-400">Создать свой</span>
+                          </button>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 gap-2">
-                    {isCreatingClan ? (
-                      // ... (existing creation UI)
-                      <div className="bg-white/5  border border-white/5 rounded-2xl p-3 flex flex-col gap-2">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Название клана</label>
+                      <div className="p-5 bg-black/40 border border-white/5 rounded-3xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-amber-400/10 rounded-xl">
+                            <Trophy className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Преимущества клана</h4>
+                        </div>
+                        <ul className="space-y-3">
+                          {[
+                            { icon: <Zap className="w-3 h-3" />, text: "+10% к получаемому опыту" },
+                            { icon: <Coins className="w-3 h-3" />, text: "Доступ к клановой казне" },
+                            { icon: <Swords className="w-3 h-3" />, text: "Участие в битвах за территории" }
+                          ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-xs text-zinc-500 font-medium">
+                              <div className="text-amber-400/60">{item.icon}</div>
+                              {item.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : isCreatingClan ? (
+                    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-6 flex flex-col gap-6 animate-in zoom-in-95 duration-300">
+                      <div className="text-center">
+                        <h4 className="text-xl font-black text-white mb-1">Создание клана</h4>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Основание новой династии</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black ml-1">Название вашего клана</label>
                           <input 
                             type="text"
                             value={newClanNameInput}
                             onChange={(e) => {
                               const val = e.target.value;
-                              if (val === "") {
-                                setNewClanNameInput(val);
-                                return;
-                              }
+                              if (val === "") { setNewClanNameInput(val); return; }
                               if (val.length > 20) return;
                               if ((val.match(/ /g) || []).length > 5) return;
                               if (!/^[A-Za-zА-Яа-яЁё\s]+$/.test(val)) return;
@@ -4236,188 +4419,172 @@ export default function App() {
                               if (hasEnglish && hasRussian) return;
                               setNewClanNameInput(val);
                             }}
-                            placeholder="Введите название..."
-                            className="bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white focus:outline-none focus:border-lime-400/50 transition-colors"
+                            placeholder="Напр: Легион Света"
+                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-lime-400/50 transition-all placeholder:text-zinc-700 font-bold"
                           />
                           {newClanNameInput.length > 0 && newClanNameInput.replace(/ /g, '').length < 5 && (
-                            <p className="text-red-400 text-[10px]">Минимум 5 букв</p>
+                            <p className="text-red-400 text-[10px] font-bold ml-1">Минимум 5 символов</p>
                           )}
                           {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) && (
-                            <p className="text-lime-300 text-[10px]">Клан с таким названием уже существует. Вы можете вступить в него бесплатно через поиск.</p>
+                            <p className="text-lime-400 text-[10px] font-bold ml-1">Такой клан уже существует. Вы можете вступить в него!</p>
                           )}
                         </div>
-                        <div className="flex gap-3">
-                          <button 
-                            onClick={async () => {
-                              const name = newClanNameInput.trim();
-                              if (name.replace(/ /g, '').length >= 5) {
-                                if (existingClans.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+
+                        <div className="p-4 bg-lime-400/5 border border-lime-400/10 rounded-2xl flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-lime-400/20 rounded-lg">
+                              <Coins className="w-4 h-4 text-lime-400" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest">Стоимость</p>
+                              <p className="text-sm font-black text-white">1000 Серебра</p>
+                            </div>
+                          </div>
+                          <div className={`text-[10px] font-black px-3 py-1 rounded-full ${silver >= 1000 ? 'bg-lime-400/20 text-lime-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {silver >= 1000 ? 'Доступно' : 'Недостаточно'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        <button 
+                          onClick={async () => {
+                            const name = newClanNameInput.trim();
+                            if (name.replace(/ /g, '').length >= 5) {
+                              if (existingClans.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                                setIsCreatingClan(false);
+                                setIsJoiningClan(true);
+                                setClanSearchQuery(name);
+                                return;
+                              }
+                              if (silver >= 1000) {
+                                try {
+                                  const user = auth.currentUser;
+                                  const docId = user ? user.uid : playerName;
+                                  await setDoc(doc(db, "clans", name), {
+                                    name,
+                                    level: 1,
+                                    members: [{ uid: docId, nickname: playerName, role: 'leader' }],
+                                    leader: playerName,
+                                    description: "Новый клан",
+                                    avatarUrl: "",
+                                    settings: { minLevel: 1, isPrivate: false }
+                                  });
+                                  await setDoc(doc(db, "users", docId), { clanId: name, silver: silver - 1000 }, { merge: true });
+                                  setSilver(prev => prev - 1000);
+                                  setClanId(name);
                                   setIsCreatingClan(false);
-                                  setIsJoiningClan(true);
-                                  setClanSearchQuery(name);
-                                  return;
-                                }
-                                if (silver >= 1000) {
-                                  try {
-                                    const user = auth.currentUser;
-                                    const docId = user ? user.uid : playerName;
-                                    
-                                    // Create clan document
-                                    await setDoc(doc(db, "clans", name), {
-                                      name,
-                                      level: 1,
-                                      members: [{ uid: docId, nickname: playerName, role: 'leader' }],
-                                      leader: playerName,
-                                      description: "Новый клан",
-                                      avatarUrl: "",
-                                      settings: {
-                                        minLevel: 1,
-                                        isPrivate: false
-                                      }
-                                    });
-                                    
-                                    // Update user
-                                    await setDoc(doc(db, "users", docId), { 
-                                      clanId: name,
-                                      silver: silver - 1000 
-                                    }, { merge: true });
-                                    
-                                    setSilver(prev => prev - 1000);
-                                    setClanId(name);
-                                    setIsCreatingClan(false);
-                                    setNewClanNameInput("");
-                                    toast.success(`Клан ${name} создан!`);
-                                  } catch (error) {
-                                    handleFirestoreError(error, OperationType.WRITE, `clans/${name}`);
-                                  }
+                                  setNewClanNameInput("");
+                                  toast.success(`Клан ${name} успешно основан!`);
+                                } catch (error) {
+                                  handleFirestoreError(error, OperationType.WRITE, `clans/${name}`);
                                 }
                               }
-                            }}
-                            disabled={(silver < 1000 && !existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) || newClanNameInput.replace(/ /g, '').length < 5}
-                            className={`flex-1 py-2 rounded-2xl font-bold uppercase tracking-widest text-xs transition-all ${
-                              (silver >= 1000 || existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) && newClanNameInput.replace(/ /g, '').length >= 5
-                                ? "bg-lime-400 text-lime-950 hover:bg-lime-300"
-                                : "bg-zinc-900/80 text-zinc-600 cursor-not-allowed"
-                            }`}
-                          >
-                            {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) ? "Найти клан" : "Создать (1000 С)"}
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setIsCreatingClan(false);
-                              setNewClanNameInput("");
-                            }}
-                            className="px-3 py-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                        {silver < 1000 && (
-                          <p className="text-red-400 text-[10px] text-center">Недостаточно серебра</p>
-                        )}
+                            }
+                          }}
+                          disabled={(silver < 1000 && !existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) || newClanNameInput.replace(/ /g, '').length < 5}
+                          className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${
+                            (silver >= 1000 || existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) && newClanNameInput.replace(/ /g, '').length >= 5
+                              ? "bg-lime-400 text-lime-950 hover:bg-lime-300 shadow-lime-400/20"
+                              : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                          }`}
+                        >
+                          {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) ? "Перейти к поиску" : "Основать клан"}
+                        </button>
+                        <button 
+                          onClick={() => { setIsCreatingClan(false); setNewClanNameInput(""); }}
+                          className="w-full py-4 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-zinc-300 transition-all"
+                        >
+                          Вернуться назад
+                        </button>
                       </div>
-                    ) : isJoiningClan ? (
-                      <div className="bg-white/5  border border-white/5 rounded-2xl p-3 flex flex-col gap-2">
-                        <div className="flex flex-col gap-2">
-                          <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Поиск клана</h4>
+                    </div>
+                  ) : isJoiningClan ? (
+                    <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 duration-300 h-full overflow-hidden">
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Поиск соратников</h4>
+                          <button onClick={() => { setIsJoiningClan(false); setClanSearchQuery(""); }} className="text-[10px] font-black text-zinc-500 hover:text-zinc-300 uppercase tracking-widest">Отмена</button>
+                        </div>
+                        <div className="relative">
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                           <input 
                             type="text"
                             value={clanSearchQuery}
                             onChange={(e) => setClanSearchQuery(e.target.value)}
                             placeholder="Название клана..."
-                            className="bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+                            className="w-full bg-black/40 border border-white/5 rounded-2xl pl-11 pr-4 py-3.5 text-white text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-zinc-700 font-bold"
                           />
                         </div>
-                        <div className="max-h-60 overflow-y-auto pr-2 flex flex-col gap-2 scrollbar-thin scrollbar-thumb-white/10">
-                          {existingClans
-                            .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
-                            .map((clanItem, idx) => (
-                            <button
-                              key={idx}
-                              onClick={async () => {
-                                try {
-                                  const user = auth.currentUser;
-                                  const docId = user ? user.uid : playerName;
-                                  
-                                  // Update user
-                                  await setDoc(doc(db, "users", docId), { clanId: clanItem.name }, { merge: true });
-                                  
-                                  // Update clan members
-                                  const clanDoc = await getDoc(doc(db, "clans", clanItem.name));
-                                  if (clanDoc.exists()) {
-                                    const currentMembers = clanDoc.data().members || [];
-                                    const isAlreadyMember = currentMembers.some((m: any) => m.uid === docId || m.nickname === playerName);
-                                    if (!isAlreadyMember) {
-                                      await updateDoc(doc(db, "clans", clanItem.name), { 
-                                        members: [...currentMembers, { uid: docId, nickname: playerName, role: 'member' }] 
-                                      });
-                                    }
-                                  }
+                      </div>
 
-                                  setClanId(clanItem.name);
-                                  setIsJoiningClan(false);
-                                  setClanSearchQuery("");
-                                  toast.success(`Вы вступили в клан ${clanItem.name}`);
-                                } catch (error) {
-                                  handleFirestoreError(error, OperationType.UPDATE, `clans/${clanItem.name}`);
-                                }
-                              }}
-                              className="w-full p-4 bg-white/5 border border-white/5 rounded-2xl text-left hover:bg-white/10 hover:border-green-500/30 transition-all group flex items-center justify-between"
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-bold text-white group-hover:text-green-400 transition-colors">{clanItem.name}</span>
-                                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                  <Users className="w-2 h-2" /> {clanItem.members} участников
-                                </span>
+                      <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
+                        {existingClans
+                          .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
+                          .length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                              <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4 border border-white/5">
+                                <SearchX className="w-8 h-8 text-zinc-700" />
                               </div>
-                              <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-green-400 transition-all group-hover:translate-x-1" />
-                            </button>
-                          ))}
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setIsJoiningClan(false);
-                            setClanSearchQuery("");
-                          }}
-                          className="w-full py-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
-                        >
-                          Отмена
-                        </button>
+                              <p className="text-zinc-500 text-xs font-bold">Кланы не найдены</p>
+                              <p className="text-zinc-600 text-[10px] mt-1 uppercase tracking-widest">Попробуйте другое название</p>
+                            </div>
+                          ) : (
+                            existingClans
+                              .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
+                              .map((clanItem, idx) => (
+                              <button
+                                key={idx}
+                                onClick={async () => {
+                                  try {
+                                    const user = auth.currentUser;
+                                    const docId = user ? user.uid : playerName;
+                                    await setDoc(doc(db, "users", docId), { clanId: clanItem.name }, { merge: true });
+                                    const clanDoc = await getDoc(doc(db, "clans", clanItem.name));
+                                    if (clanDoc.exists()) {
+                                      const currentMembers = clanDoc.data().members || [];
+                                      const isAlreadyMember = currentMembers.some((m: any) => m.uid === docId || m.nickname === playerName);
+                                      if (!isAlreadyMember) {
+                                        await updateDoc(doc(db, "clans", clanItem.name), { 
+                                          members: [...currentMembers, { uid: docId, nickname: playerName, role: 'member' }] 
+                                        });
+                                      }
+                                    }
+                                    setClanId(clanItem.name);
+                                    setIsJoiningClan(false);
+                                    setClanSearchQuery("");
+                                    toast.success(`Вы вступили в клан ${clanItem.name}`);
+                                  } catch (error) {
+                                    handleFirestoreError(error, OperationType.UPDATE, `clans/${clanItem.name}`);
+                                  }
+                                }}
+                                className="w-full p-4 bg-white/5 border border-white/5 rounded-[1.5rem] text-left hover:bg-white/10 hover:border-blue-500/30 transition-all group flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Shield className="w-6 h-6 text-zinc-700 group-hover:text-blue-400 transition-colors" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{clanItem.name}</span>
+                                    <div className="flex items-center gap-3 mt-1">
+                                      <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-1">
+                                        <Users className="w-2.5 h-2.5" /> {clanItem.members} / 50
+                                      </span>
+                                      <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-1">
+                                        <Zap className="w-2.5 h-2.5" /> LVL {Math.floor(Math.random() * 10) + 1}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
+                                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-all group-hover:translate-x-0.5" />
+                                </div>
+                              </button>
+                            ))
+                          )}
                       </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Ваш клан</h4>
-                          <span className="text-[10px] text-zinc-600 font-mono">ID: {Math.floor(1000 + Math.random() * 9000)}</span>
-                        </div>
-                        
-                        <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5">
-                            <Shield className="w-6 h-6 text-zinc-500" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-zinc-500 text-xs italic">Вы не состоите в клане</p>
-                            <p className="text-[10px] text-zinc-600 mt-1">Вступайте в кланы для совместных рейдов</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <button 
-                            onClick={() => setIsJoiningClan(true)}
-                            className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all"
-                          >
-                            <Search className="w-3 h-3" /> Найти
-                          </button>
-                          <button 
-                            onClick={() => setIsCreatingClan(true)}
-                            className="flex items-center justify-center gap-2 py-3 bg-lime-400/10 border border-lime-400/20 rounded-2xl text-lime-400 text-xs font-bold uppercase tracking-widest hover:bg-lime-400/20 transition-all"
-                          >
-                            <Plus className="w-3 h-3" /> Создать
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
