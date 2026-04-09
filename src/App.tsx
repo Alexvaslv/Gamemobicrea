@@ -5,11 +5,41 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
+import { 
+  User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, 
+  CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, 
+  Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, 
+  BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, 
+  LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, 
+  Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, 
+  MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, 
+  ShieldCheck, Radio, ShieldAlert, UserPlus, UserMinus, Ban as BanIcon, 
+  VolumeX, Volume2, BadgeCheck, Star as StarIcon, Gem as GemIcon, 
+  LayoutDashboard, Users as UsersIcon, Settings as SettingsIcon,
+  Search as SearchIcon, MoreVertical, Trash, Edit, Save, XCircle
+} from "lucide-react";
 import { db, auth } from "./firebase";
-import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { 
+  doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, 
+  getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, 
+  orderBy, Timestamp 
+} from "firebase/firestore";
 import { Toaster, toast } from "sonner";
 import { io, Socket } from "socket.io-client";
+
+// shadcn components
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // --- Firestore Data Service ---
 
@@ -65,16 +95,31 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
-const PLAYER_DATA_COLLECTION = "player_data";
+const USERS_COLLECTION = "users";
 
 export async function savePlayerData(userId: string, data: any) {
   try {
-    await setDoc(doc(db, PLAYER_DATA_COLLECTION, userId), {
+    await setDoc(doc(db, USERS_COLLECTION, userId), {
       ...data,
+      uid: userId,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, PLAYER_DATA_COLLECTION + "/" + userId);
+    handleFirestoreError(error, OperationType.WRITE, USERS_COLLECTION + "/" + userId);
+  }
+}
+
+export async function loadPlayerData(userId: string) {
+  try {
+    const docRef = doc(db, USERS_COLLECTION, userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, USERS_COLLECTION + "/" + userId);
+    return null;
   }
 }
 
@@ -84,7 +129,7 @@ export async function savePlayerData(userId: string, data: any) {
  */
 export async function equipItemToFirestore(playerId: string, item: any, slot: string) {
   try {
-    const playerDocRef = doc(db, PLAYER_DATA_COLLECTION, playerId);
+    const playerDocRef = doc(db, USERS_COLLECTION, playerId);
     const playerDoc = await getDoc(playerDocRef);
     
     if (playerDoc.exists()) {
@@ -132,20 +177,6 @@ export async function equipItemToFirestore(playerId: string, item: any, slot: st
   } catch (error) {
     console.error("Ошибка сохранения вещи:", error);
     throw error;
-  }
-}
-
-export async function loadPlayerData(userId: string) {
-  try {
-    const docRef = doc(db, PLAYER_DATA_COLLECTION, userId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data();
-    }
-    return null;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, PLAYER_DATA_COLLECTION + "/" + userId);
-    return null;
   }
 }
 
@@ -428,7 +459,277 @@ const SHOP_ITEMS: Record<string, any[]> = {
   ]
 };
 
+const AdminPanel = ({ currentUser, onUpdateUser }: { currentUser: any, onUpdateUser: (uid: string, data: any) => Promise<void> }) => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, USERS_COLLECTION), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data()
+      }));
+      setUsers(usersData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching users:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredUsers = users.filter(u => 
+    (u.playerName || "").toLowerCase().includes(search.toLowerCase()) ||
+    (u.playerEmail || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+    try {
+      const { uid, ...data } = editingUser;
+      await onUpdateUser(uid, data);
+      setEditingUser(null);
+      toast.success("Пользователь обновлен");
+    } catch (error) {
+      toast.error("Ошибка обновления");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Input 
+            placeholder="Поиск по имени или email..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 bg-zinc-900 border-zinc-800"
+          />
+        </div>
+        <Badge variant="outline" className="text-zinc-500 border-zinc-800">
+          Всего игроков: {users.length}
+        </Badge>
+      </div>
+
+      <div className="rounded-xl border border-zinc-900 overflow-hidden">
+        <Table>
+          <TableHeader className="bg-zinc-900/50">
+            <TableRow className="border-zinc-900 hover:bg-transparent">
+              <TableHead className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Игрок</TableHead>
+              <TableHead className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Роль</TableHead>
+              <TableHead className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Уровень</TableHead>
+              <TableHead className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Валюта</TableHead>
+              <TableHead className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Статус</TableHead>
+              <TableHead className="text-right text-zinc-500 font-bold uppercase text-[10px] tracking-widest">Действия</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredUsers.map((user) => (
+              <TableRow key={user.uid} className="border-zinc-900 hover:bg-zinc-900/30 transition-colors">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 border border-zinc-800">
+                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarFallback className="bg-zinc-800 text-zinc-400">
+                        {user.playerName?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-zinc-200">{user.playerName || "Без имени"}</span>
+                      <span className="text-[10px] text-zinc-500 truncate max-w-[150px]">{user.playerEmail}</span>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={`
+                    ${user.role === 'admin' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
+                      user.role === 'moderator' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                      user.role === 'editor' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                      'bg-zinc-500/10 text-zinc-400 border-zinc-800'}
+                    text-[9px] font-black uppercase tracking-tighter
+                  `}>
+                    {user.role || 'user'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="font-mono text-zinc-400">{user.currentLevel || 1}</span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                      <span className="text-[10px] font-mono text-zinc-300">{user.silver || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      <span className="text-[10px] font-mono text-zinc-300">{user.gold || 0}</span>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {user.isVip && <Badge className="bg-amber-500 text-black text-[8px] h-4 px-1 font-black">VIP</Badge>}
+                    {user.isVerified && <Badge className="bg-blue-500 text-white text-[8px] h-4 px-1 font-black">VERIFIED</Badge>}
+                    {user.isMuted && <Badge className="bg-zinc-700 text-zinc-300 text-[8px] h-4 px-1 font-black">MUTED</Badge>}
+                    {user.isBanned && <Badge className="bg-red-600 text-white text-[8px] h-4 px-1 font-black">BANNED</Badge>}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)} className="h-8 w-8 hover:bg-zinc-800">
+                        <Edit className="h-4 w-4 text-zinc-400" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-zinc-950 border-zinc-900 text-zinc-100 max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-display tracking-tight">Редактирование игрока</DialogTitle>
+                        <DialogDescription className="text-zinc-500">
+                          Изменение параметров для {editingUser?.playerName}
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {editingUser && (
+                        <div className="space-y-6 py-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Роль</label>
+                              <Select 
+                                value={editingUser.role || "user"} 
+                                onValueChange={(v) => setEditingUser({...editingUser, role: v})}
+                              >
+                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                  <SelectItem value="user">User</SelectItem>
+                                  <SelectItem value="editor">Editor</SelectItem>
+                                  <SelectItem value="moderator">Moderator</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Уровень</label>
+                              <Input 
+                                type="number" 
+                                value={editingUser.currentLevel || 1}
+                                onChange={(e) => setEditingUser({...editingUser, currentLevel: parseInt(e.target.value)})}
+                                className="bg-zinc-900 border-zinc-800"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Серебро</label>
+                              <Input 
+                                type="number" 
+                                value={editingUser.silver || 0}
+                                onChange={(e) => setEditingUser({...editingUser, silver: parseInt(e.target.value)})}
+                                className="bg-zinc-900 border-zinc-800"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Золото</label>
+                              <Input 
+                                type="number" 
+                                value={editingUser.gold || 0}
+                                onChange={(e) => setEditingUser({...editingUser, gold: parseInt(e.target.value)})}
+                                className="bg-zinc-900 border-zinc-800"
+                              />
+                            </div>
+                          </div>
+
+                          <Separator className="bg-zinc-900" />
+
+                          <div className="grid grid-cols-2 gap-y-4">
+                            <div className="flex items-center justify-between pr-4">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold">VIP Статус</span>
+                                <span className="text-[10px] text-zinc-500">Премиум доступ</span>
+                              </div>
+                              <Switch 
+                                checked={editingUser.isVip || false}
+                                onCheckedChange={(v) => setEditingUser({...editingUser, isVip: v})}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between pl-4 border-l border-zinc-900">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold">Верификация</span>
+                                <span className="text-[10px] text-zinc-500">Галочка профиля</span>
+                              </div>
+                              <Switch 
+                                checked={editingUser.isVerified || false}
+                                onCheckedChange={(v) => setEditingUser({...editingUser, isVerified: v})}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between pr-4">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-zinc-400">Мут</span>
+                                <span className="text-[10px] text-zinc-500">Запрет чата</span>
+                              </div>
+                              <Switch 
+                                checked={editingUser.isMuted || false}
+                                onCheckedChange={(v) => setEditingUser({...editingUser, isMuted: v})}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between pl-4 border-l border-zinc-900">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-red-500">Бан</span>
+                                <span className="text-[10px] text-zinc-500">Полный запрет</span>
+                              </div>
+                              <Switch 
+                                checked={editingUser.isBanned || false}
+                                onCheckedChange={(v) => setEditingUser({...editingUser, isBanned: v})}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setEditingUser(null)} className="bg-transparent border-zinc-800">
+                          Отмена
+                        </Button>
+                        <Button onClick={handleSaveUser} className="bg-lime-500 hover:bg-lime-400 text-black font-bold">
+                          Сохранить
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
+  const [isEditor, setIsEditor] = useState(false);
+  const [isVip, setIsVip] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
   const [page, setPage] = useState(() => {
     const savedPage = localStorage.getItem("rpg_current_page");
     const isLoggedIn = localStorage.getItem("rpg_is_logged_in") === "true";
@@ -436,6 +737,15 @@ export default function App() {
     if (isLoggedIn && savedPage) return parseInt(savedPage, 10) || defaultPage;
     return defaultPage;
   });
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
+  const [isEditor, setIsEditor] = useState(false);
+  const [isVip, setIsVip] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [userRole, setUserRole] = useState("user");
 
   useEffect(() => {
     localStorage.setItem("rpg_current_page", page.toString());
@@ -597,6 +907,9 @@ export default function App() {
       if (!user) {
         // No user is signed in. We'll wait for the user to sign in with Google.
         setIsAuthReady(true);
+        setIsAdmin(false);
+        setIsModerator(false);
+        setIsEditor(false);
       } else {
         setAuthError(null);
         // Load player data from Firestore
@@ -621,7 +934,28 @@ export default function App() {
           setIsBirthdayHidden(data.isBirthdayHidden || false);
           setIsCountryHidden(data.isCountryHidden || false);
           setSilver(data.silver || 0);
-          // ... (add other fields as needed)
+          
+          // Admin & Roles
+          const role = data.role || "user";
+          setUserRole(role);
+          setIsAdmin(role === "admin" || user.email === "alexeivasilev27081994@gmail.com" || user.email === "svksinel@gmail.com");
+          setIsModerator(role === "moderator" || role === "admin");
+          setIsEditor(role === "editor" || role === "admin");
+          setIsVip(data.isVip || false);
+          setIsVerified(data.isVerified || false);
+          setIsMuted(data.isMuted || false);
+          setIsBanned(data.isBanned || false);
+          
+          if (data.isBanned) {
+            toast.error("Ваш аккаунт заблокирован");
+            auth.signOut();
+            setIsLoggedIn(false);
+          }
+        } else {
+          // New user or no data
+          if (user.email === "alexeivasilev27081994@gmail.com" || user.email === "svksinel@gmail.com") {
+            setIsAdmin(true);
+          }
         }
         setIsAuthReady(true);
       }
@@ -887,7 +1221,23 @@ export default function App() {
         if (data.spentWisdom !== undefined) setSpentWisdom(data.spentWisdom);
         if (data.playerBadges) setPlayerBadges(data.playerBadges);
         if (data.playerStatus) setPlayerStatus(data.playerStatus);
-        if (data.roles) setUserRoles(data.roles);
+        if (data.role) {
+          setUserRole(data.role);
+          setIsAdmin(data.role === "admin" || auth.currentUser?.email === "alexeivasilev27081994@gmail.com" || auth.currentUser?.email === "svksinel@gmail.com");
+          setIsModerator(data.role === "moderator" || data.role === "admin");
+          setIsEditor(data.role === "editor" || data.role === "admin");
+        }
+        if (data.isVip !== undefined) setIsVip(data.isVip);
+        if (data.isVerified !== undefined) setIsVerified(data.isVerified);
+        if (data.isMuted !== undefined) setIsMuted(data.isMuted);
+        if (data.isBanned !== undefined) {
+          setIsBanned(data.isBanned);
+          if (data.isBanned) {
+            toast.error("Ваш аккаунт заблокирован");
+            auth.signOut();
+            setIsLoggedIn(false);
+          }
+        }
         
         // Reset the flag after a short delay to ensure all state updates are processed
         setTimeout(() => {
@@ -1212,21 +1562,6 @@ export default function App() {
   const [playerStatus, setPlayerStatus] = useState<string | null>(() => localStorage.getItem("rpg_player_status"));
   const [targetUid, setTargetUid] = useState<string | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
-
-  const isAdmin = useMemo(() => {
-    return auth.currentUser?.email === 'svksinel@gmail.com' || 
-           auth.currentUser?.email === 'alexeivasilev27081994@gmail.com' ||
-           playerName === 'Murr' || 
-           playerName === 'admin' || 
-           userRoles.includes('admin');
-  }, [auth.currentUser, playerName, userRoles]);
-
-  const isCreator = useMemo(() => {
-    return auth.currentUser?.email === 'svksinel@gmail.com' || 
-           auth.currentUser?.email === 'alexeivasilev27081994@gmail.com' ||
-           playerName === 'Murr' || 
-           userRoles.includes('creator');
-  }, [auth.currentUser, playerName, userRoles]);
 
   // Global Chat Effect
   useEffect(() => {
@@ -1941,6 +2276,18 @@ export default function App() {
     });
     
     setPage(5);
+  };
+
+  const handleUpdateUser = async (uid: string, data: any) => {
+    try {
+      await updateDoc(doc(db, USERS_COLLECTION, uid), {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
   };
 
   return (
@@ -2801,236 +3148,200 @@ export default function App() {
         {page === 2 && (
           <motion.div
             key="page2"
-            className="min-h-[100dvh] flex flex-col items-center p-4 pb-24 text-zinc-100 relative"
+            className="min-h-[100dvh] flex flex-col items-center p-4 pb-24 text-zinc-100 relative w-full max-w-md mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Character Info Bar */}
-            <div className="w-full max-w-md flex items-center justify-between mb-6 px-2 mt-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
+            {/* Header / Info Bar */}
+            <div className="w-full flex items-center justify-between mb-8 mt-4">
+              <div className="flex items-center gap-4">
+                <div className="relative group">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl group-hover:border-lime-500/50 transition-all duration-500">
                     <img 
                       src={avatarUrl || (playerGender === 'male' 
                         ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                         : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                       }
                       alt="Avatar" 
-                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
+                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'} opacity-80 group-hover:opacity-100 transition-opacity`}
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
-                    <span className="text-[8px] font-bold text-lime-400">{currentLevel}</span>
-                  </div>
+                  <Badge className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-lime-500 text-black border-2 border-zinc-950 flex items-center justify-center p-0 font-black text-[10px]">
+                    {currentLevel}
+                  </Badge>
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
-                    {isCreator && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-display tracking-tight text-white">{playerName}</span>
+                    {isVip && <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[8px] px-1.5 h-4 uppercase font-black tracking-tighter">VIP</Badge>}
+                    {isAdmin && <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 text-[8px] px-1.5 h-4 uppercase font-black tracking-tighter">ADMIN</Badge>}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Онлайн</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">В сети</span>
+                    </div>
+                    {isVerified && <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[8px] px-1 h-3.5 uppercase font-bold tracking-tighter">Верифицирован</Badge>}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setPage(29)}
-                  className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors relative"
-                >
-                  <Users className="w-5 h-5" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
-                    <span className="text-[8px] font-bold text-white">{onlineUsers.size}</span>
-                  </div>
-                </button>
-                <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
-                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
-                  <Settings className="w-5 h-5" />
-                </button>
+                <Button variant="ghost" size="icon" onClick={() => setPage(29)} className="relative h-10 w-10 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10">
+                  <Users className="w-5 h-5 text-zinc-400" />
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-green-500 text-[8px] font-black text-white flex items-center justify-center border-2 border-zinc-950">
+                    {onlineUsers.size}
+                  </span>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setPage(11)} className="h-10 w-10 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10">
+                  <Settings className="w-5 h-5 text-zinc-400" />
+                </Button>
               </div>
             </div>
 
-            {/* Global News Ticker */}
+            {/* Global Events */}
             {globalEvents.length > 0 && (
-              <div className="w-full max-w-md mb-6 bg-lime-400/5 border border-lime-400/10 rounded-2xl py-2 px-4 overflow-hidden relative">
-                <div className="flex items-center gap-3 animate-marquee whitespace-nowrap">
-                  <span className="text-[10px] font-bold text-lime-400 uppercase tracking-widest flex-shrink-0">События:</span>
-                  <p className="text-[10px] text-zinc-300">
-                    {globalEvents[0].message}
-                  </p>
+              <div className="w-full mb-8">
+                <div className="bg-lime-500/5 border border-lime-500/10 rounded-2xl p-3 flex items-center gap-3 overflow-hidden">
+                  <Badge variant="outline" className="bg-lime-500/20 text-lime-400 border-lime-500/30 text-[9px] font-black uppercase tracking-widest flex-shrink-0">
+                    Событие
+                  </Badge>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-[11px] text-zinc-300 animate-marquee whitespace-nowrap">
+                      {globalEvents[0].message}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Main Stats Ring (Sporty Vibe) */}
-            <div className="w-full max-w-md flex justify-center mb-8">
-              <div className="relative w-48 h-48 flex items-center justify-center">
-                {/* Background Ring */}
+            {/* Level Progress Circle */}
+            <div className="w-full flex justify-center mb-10">
+              <div className="relative w-56 h-56 flex items-center justify-center">
                 <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                  {/* Progress Ring */}
-                  <circle 
-                    cx="50" cy="50" r="45" fill="none" 
-                    stroke="url(#limeGradient)" 
-                    strokeWidth="8" 
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="4" />
+                  <motion.circle 
+                    cx="50" cy="50" r="46" fill="none" 
+                    stroke="url(#premiumGradient)" 
+                    strokeWidth="4" 
                     strokeLinecap="round"
-                    strokeDasharray="282.7"
-                    strokeDashoffset={282.7 - (282.7 * (xpPercentage / 100))}
-                    className="transition-all duration-1000 ease-out"
+                    strokeDasharray="289"
+                    initial={{ strokeDashoffset: 289 }}
+                    animate={{ strokeDashoffset: 289 - (289 * (xpPercentage / 100)) }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
                   />
                   <defs>
-                    <linearGradient id="limeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="premiumGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#A3E635" />
                       <stop offset="100%" stopColor="#10B981" />
                     </linearGradient>
                   </defs>
                 </svg>
                 
-                {/* Inner Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 rounded-full glass-card border border-white/10 flex items-center justify-center mb-2 overflow-hidden">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center mb-2 overflow-hidden shadow-2xl">
                     <img 
                       src={avatarUrl || (playerGender === 'male' 
                         ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                         : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                       }
                       alt="Avatar" 
-                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
+                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'} opacity-60`}
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <span className="text-3xl font-black tracking-tighter">{currentLevel}</span>
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Уровень</span>
+                  <span className="text-4xl font-display tracking-tighter font-black text-white">{currentLevel}</span>
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black">Уровень</span>
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats Cards */}
-            <div className="w-full max-w-md grid grid-cols-3 gap-3 mb-8">
-              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
-                <Heart className="w-5 h-5 text-rose-500 mb-2" />
-                <span className="text-lg font-bold">{playerHealth}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Здоровье</span>
-              </div>
-              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
-                <Coins className="w-5 h-5 text-zinc-400 mb-2" />
-                <span className="text-lg font-bold">{silver}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Серебро</span>
-              </div>
-              <div className="glass-card p-4 flex flex-col items-center justify-center text-center">
-                <Gem className="w-5 h-5 text-cyan-400 mb-2" />
-                <span className="text-lg font-bold">{gold}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Золото</span>
-              </div>
+            {/* Stats Grid */}
+            <div className="w-full grid grid-cols-3 gap-4 mb-10">
+              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-rose-500/30 transition-colors group">
+                <Heart className="w-5 h-5 text-rose-500 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xl font-display font-bold text-white">{playerHealth}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Здоровье</span>
+              </Card>
+              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-zinc-400/30 transition-colors group">
+                <Coins className="w-5 h-5 text-zinc-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xl font-display font-bold text-white">{silver}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Серебро</span>
+              </Card>
+              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-cyan-400/30 transition-colors group">
+                <Gem className="w-5 h-5 text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xl font-display font-bold text-white">{gold}</span>
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Золото</span>
+              </Card>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 w-full max-w-md">
+            {/* Navigation Grid */}
+            <div className="w-full flex flex-col gap-6">
               <div className="grid grid-cols-2 gap-3">
-                <motion.button 
-                  onClick={() => setPage(18)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-zinc-300 font-bold"
-                >
+                <Button variant="outline" onClick={() => setPage(18)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-blue-500/30 text-zinc-300 font-bold gap-3">
                   <Users className="w-5 h-5 text-blue-400" /> Друзья
-                </motion.button>
-                <motion.button 
-                  onClick={() => setPage(19)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-zinc-300 font-bold"
-                >
+                </Button>
+                <Button variant="outline" onClick={() => setPage(19)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-green-500/30 text-zinc-300 font-bold gap-3">
                   <MessageSquare className="w-5 h-5 text-green-400" /> Чат
-                </motion.button>
-                <motion.button 
-                  onClick={() => setPage(20)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-zinc-300 font-bold"
-                >
+                </Button>
+                <Button variant="outline" onClick={() => setPage(20)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-lime-500/30 text-zinc-300 font-bold gap-3">
                   <Newspaper className="w-5 h-5 text-lime-400" /> Новости
-                </motion.button>
-                <motion.button 
-                  onClick={() => setPage(21)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-zinc-300 font-bold"
-                >
+                </Button>
+                <Button variant="outline" onClick={() => setPage(21)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-rose-500/30 text-zinc-300 font-bold gap-3">
                   <MessageCircle className="w-5 h-5 text-rose-400" /> Форум
-                </motion.button>
+                </Button>
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                <motion.button 
-                  onClick={() => setPage(10)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-zinc-300 font-bold"
-                >
-                  <Flag className="w-5 h-5 text-purple-400" /> Клан
-                </motion.button>
-              </div>
-              <div className="mt-4 mb-2">
-                <h3 className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-3 pl-2">Режимы игры</h3>
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <motion.button 
-                    onClick={() => setPage(22)}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                    className="py-4 rounded-2xl glass-card hover:bg-white/10 transition-colors flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold"
-                  >
+
+              <Button variant="outline" onClick={() => setPage(10)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-purple-500/30 text-zinc-300 font-bold gap-3">
+                <Flag className="w-5 h-5 text-purple-400" /> Клан
+              </Button>
+
+              <div className="space-y-4">
+                <h3 className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-black pl-2">Режимы игры</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <Button variant="outline" onClick={() => setPage(22)} className="h-24 flex-col rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-orange-500/30 gap-2">
                     <Swords className="w-6 h-6 text-orange-400" />
-                    <span className="text-[9px] uppercase tracking-wider">1 на 1</span>
-                  </motion.button>
-                  <motion.button 
-                    onClick={() => setPage(23)}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                    className="py-4 rounded-2xl glass-card hover:bg-white/10 transition-colors flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold"
-                  >
+                    <span className="text-[9px] uppercase tracking-widest font-black">1 на 1</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => setPage(23)} className="h-24 flex-col rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-cyan-500/30 gap-2">
                     <Users className="w-6 h-6 text-cyan-400" />
-                    <span className="text-[9px] uppercase tracking-wider">Отряды</span>
-                  </motion.button>
-                  <motion.button 
-                    onClick={() => setPage(24)}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                    className="py-4 rounded-2xl glass-card hover:bg-white/10 transition-colors flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent" />
+                    <span className="text-[9px] uppercase tracking-widest font-black">Отряды</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => setPage(24)} className="h-24 flex-col rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-rose-500/30 gap-2 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <Trophy className="w-6 h-6 text-rose-400 relative z-10" />
-                    <span className="text-[9px] uppercase tracking-wider relative z-10 text-center leading-tight">Королевская<br/>битва</span>
-                  </motion.button>
+                    <span className="text-[9px] uppercase tracking-widest font-black relative z-10 text-center leading-tight">Битва</span>
+                  </Button>
                 </div>
-                <motion.button 
-                  onClick={() => setPage(9)}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                  className="w-full py-4 rounded-2xl btn-primary flex items-center justify-center gap-3"
-                >
+                <Button onClick={() => setPage(9)} className="w-full h-16 rounded-2xl bg-lime-500 hover:bg-lime-400 text-black font-black uppercase tracking-widest gap-3 shadow-[0_0_20px_rgba(163,230,53,0.2)]">
                   <ScrollText className="w-6 h-6" /> Сюжетные миссии
-                </motion.button>
+                </Button>
               </div>
-              <div className="mt-2 mb-2">
-                <h3 className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-3 pl-2">Торговля</h3>
+
+              <div className="space-y-4">
+                <h3 className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-black pl-2">Торговля</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <motion.button onClick={() => setPage(12)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-bold text-zinc-300">
+                  <Button variant="outline" onClick={() => setPage(12)} className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/30 text-zinc-300 font-bold gap-3">
                     <ShoppingBag className="w-5 h-5 text-amber-400" /> Магазин
-                  </motion.button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-bold text-zinc-300">
+                  </Button>
+                  <Button variant="outline" className="h-14 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/30 text-zinc-300 font-bold gap-3">
                     <Gavel className="w-5 h-5 text-amber-400" /> Аукцион
-                  </motion.button>
+                  </Button>
                 </div>
               </div>
-              <div className="mt-2">
-                <motion.button onClick={() => setPage(3)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="w-full py-4 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-bold text-zinc-300">
-                  <User className="w-5 h-5 text-lime-400" /> Мой персонаж
-                </motion.button>
-              </div>
+
+              <Button variant="outline" onClick={() => setPage(3)} className="h-16 rounded-2xl bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:border-lime-500/30 text-zinc-300 font-bold gap-3">
+                <User className="w-5 h-5 text-lime-400" /> Мой персонаж
+              </Button>
 
               {isAdmin && (
-                <div className="mt-4">
-                  <motion.button 
-                    onClick={() => setPage(28)} 
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} 
-                    className="w-full py-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 font-bold text-red-400"
-                  >
-                    <ShieldAlert className="w-5 h-5" /> Админ Панель
-                  </motion.button>
-                </div>
+                <Button 
+                  onClick={() => setPage(28)} 
+                  className="w-full h-16 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 font-black uppercase tracking-[0.2em] gap-3"
+                >
+                  <ShieldAlert className="w-6 h-6" /> Админ Панель
+                </Button>
               )}
             </div>
           </motion.div>
@@ -6285,250 +6596,21 @@ export default function App() {
         {page === 28 && isAdmin && (
           <motion.div
             key="page28"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="min-h-[100dvh] flex flex-col bg-zinc-950 text-zinc-100 w-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center mb-8 relative mt-4">
-              <button 
-                onClick={() => setPage(2)} 
-                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-red-500">Админ Панель</h2>
+            <div className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 p-4 flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => setPage(2)}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <h2 className="text-xl font-display tracking-tight">Админ Панель</h2>
             </div>
-
-            <div className="flex-1 flex flex-col gap-6">
-              {/* Player Management Section */}
-              <div className="glass-card p-4 border-red-500/20">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-400" /> Управление игроками
-                </h3>
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-2">
-                    <input 
-                      id="admin-player-search"
-                      type="text" 
-                      placeholder="Имя игрока..."
-                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={async () => {
-                        const name = (document.getElementById('admin-player-search') as HTMLInputElement).value.trim();
-                        if (!name) { toast.error("Введите имя"); return; }
-                        try {
-                          const userDoc = await getDoc(doc(db, "users", name));
-                          if (userDoc.exists()) {
-                            const data = userDoc.data();
-                            const currentRoles = data.roles || [];
-                            const isTargetAdmin = currentRoles.includes('admin');
-                            const newRoles = isTargetAdmin 
-                              ? currentRoles.filter((r: string) => r !== 'admin')
-                              : [...currentRoles, 'admin'];
-                            await updateDoc(doc(db, "users", name), { roles: newRoles });
-                            toast.success(`Админ для ${name}: ${!isTargetAdmin ? 'ВКЛ' : 'ВЫКЛ'}`);
-                          } else { toast.error("Игрок не найден"); }
-                        } catch (err) { toast.error("Ошибка"); }
-                      }}
-                      className="py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors"
-                    >
-                      Админ +/-
-                    </button>
-                    <button 
-                      onClick={async () => {
-                        const name = (document.getElementById('admin-player-search') as HTMLInputElement).value.trim();
-                        if (!name) { toast.error("Введите имя"); return; }
-                        try {
-                          const userDoc = await getDoc(doc(db, "users", name));
-                          if (userDoc.exists()) {
-                            const data = userDoc.data();
-                            const currentRoles = data.roles || [];
-                            const isTargetCreator = currentRoles.includes('creator');
-                            const newRoles = isTargetCreator 
-                              ? currentRoles.filter((r: string) => r !== 'creator')
-                              : [...currentRoles, 'creator'];
-                            await updateDoc(doc(db, "users", name), { roles: newRoles });
-                            toast.success(`Создатель для ${name}: ${!isTargetCreator ? 'ВКЛ' : 'ВЫКЛ'}`);
-                          } else { toast.error("Игрок не найден"); }
-                        } catch (err) { toast.error("Ошибка"); }
-                      }}
-                      className="py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold hover:bg-amber-500/20 transition-colors"
-                    >
-                      Создатель +/-
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Item Spawner Section */}
-              <div className="glass-card p-4 border-red-500/20">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
-                  <Backpack className="w-4 h-4 text-purple-400" /> Спавнер предметов
-                </h3>
-                <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {['equipment', 'elixirs', 'books', 'chests'].map(cat => (
-                      <button 
-                        key={cat}
-                        onClick={() => {
-                          const items = SHOP_ITEMS[cat] || [];
-                          if (items.length > 0) {
-                            const randomItem = items[Math.floor(Math.random() * items.length)];
-                            if (cat === 'equipment') {
-                              setInventory(prev => [...prev, { ...randomItem, id: `${randomItem.id}_${Date.now()}` }]);
-                            } else if (cat === 'elixirs') {
-                              setElixirsInventory(prev => {
-                                const existing = prev.find(i => i.id === randomItem.id);
-                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
-                                return [...prev, { ...randomItem, count: 1 }];
-                              });
-                            } else if (cat === 'books') {
-                              setBooksInventory(prev => {
-                                const existing = prev.find(i => i.id === randomItem.id);
-                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
-                                return [...prev, { ...randomItem, count: 1 }];
-                              });
-                            } else if (cat === 'chests') {
-                              setChestsInventory(prev => {
-                                const existing = prev.find(i => i.id === randomItem.id);
-                                if (existing) return prev.map(i => i.id === randomItem.id ? { ...i, count: (i.count || 1) + 1 } : i);
-                                return [...prev, { ...randomItem, count: 1 }];
-                              });
-                            }
-                            toast.success(`Выдан предмет: ${randomItem.name}`);
-                          }
-                        }}
-                        className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors capitalize"
-                      >
-                        Случ. {cat}
-                      </button>
-                    ))}
-                  </div>
-                  <button 
-                    onClick={() => {
-                      const legendary = SHOP_ITEMS.equipment.filter(i => i.rarity === 'legendary');
-                      if (legendary.length > 0) {
-                        const item = legendary[Math.floor(Math.random() * legendary.length)];
-                        setInventory(prev => [...prev, { ...item, id: `${item.id}_${Date.now()}` }]);
-                        toast.success(`Выдана легендарка: ${item.name}`);
-                      }
-                    }}
-                    className="w-full py-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold hover:bg-orange-500/20 transition-colors"
-                  >
-                    Выдать случайную легендарку
-                  </button>
-                </div>
-              </div>
-
-              {/* Resources Section */}
-              <div className="glass-card p-4 border-red-500/20">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-amber-400" /> Ресурсы
-                </h3>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <button 
-                    onClick={() => setSilver(prev => prev + 100000)}
-                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
-                  >
-                    +100k Серебра
-                  </button>
-                  <button 
-                    onClick={() => setGold(prev => prev + 1000)}
-                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
-                  >
-                    +1k Золота
-                  </button>
-                  <button 
-                    onClick={() => setIron(prev => prev + 5000)}
-                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
-                  >
-                    +5k Железа
-                  </button>
-                  <button 
-                    onClick={() => setDiamonds(prev => prev + 100)}
-                    className="py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-colors"
-                  >
-                    +100 Алмазов
-                  </button>
-                </div>
-              </div>
-
-              {/* Level Section */}
-              <div className="glass-card p-4 border-red-500/20">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-lime-400" /> Уровень
-                </h3>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => {
-                      const nextLevelXp = XP_TABLE[currentLevel + 1] || 0;
-                      setXp(nextLevelXp);
-                    }}
-                    className="flex-1 py-3 rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold hover:bg-lime-500/20 transition-colors"
-                  >
-                    Следующий уровень
-                  </button>
-                  <button 
-                    onClick={() => setXp(0)}
-                    className="flex-1 py-3 rounded-xl bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 text-xs font-bold hover:bg-zinc-500/20 transition-colors"
-                  >
-                    Сбросить XP
-                  </button>
-                </div>
-              </div>
-
-              {/* Global Message */}
-              <div className="glass-card p-4 border-red-500/20">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-blue-400" /> Глобальное сообщение
-                </h3>
-                <div className="flex flex-col gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Текст сообщения..."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const val = e.currentTarget.value;
-                        if (val.trim() && socket) {
-                          socket.emit("global_message", {
-                            type: "achievement",
-                            message: val,
-                            sender: "Администратор"
-                          });
-                          e.currentTarget.value = "";
-                          toast.success("Сообщение отправлено!");
-                        }
-                      }
-                    }}
-                  />
-                  <p className="text-[9px] text-zinc-500 italic">Нажмите Enter для отправки всем игрокам</p>
-                </div>
-              </div>
-
-              {/* Danger Zone */}
-              <div className="mt-auto glass-card p-4 border-red-500/40 bg-red-500/5">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-red-500 mb-4 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4" /> Опасная зона
-                </h3>
-                <button 
-                  onClick={() => {
-                    if (confirm("ВНИМАНИЕ! Это действие полностью сбросит ваш прогресс. Вы уверены?")) {
-                      localStorage.clear();
-                      window.location.reload();
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-colors"
-                >
-                  Сбросить мой прогресс
-                </button>
-              </div>
-            </div>
+            <ScrollArea className="flex-1">
+              <AdminPanel currentUser={auth.currentUser} onUpdateUser={handleUpdateUser} />
+            </ScrollArea>
           </motion.div>
         )}
 

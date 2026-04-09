@@ -1,8 +1,110 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "alexeivasilev27081994@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "svksinel@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isModerator() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'moderator'] ||
+        isAdmin()
+      );
+    }
+
+    function isEditor() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor'] ||
+        isAdmin()
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'playerName', 'email', 'race', 'gender', 'createdAt']) &&
+             data.uid is string &&
+             data.playerName is string && data.playerName.size() > 0 && data.playerName.size() < 50 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.race is string &&
+             data.gender is string &&
+             (!('role' in data) || data.role in ['user', 'moderator', 'editor', 'admin']) &&
+             (!('silver' in data) || data.silver is int) &&
+             (!('gold' in data) || data.gold is int) &&
+             (!('diamonds' in data) || data.diamonds is int) &&
+             (!('level' in data) || data.level is int);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                      (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && (
+                      (isOwner(userId) && isValidUser(request.resource.data) && 
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.silver == resource.data.silver &&
+                       request.resource.data.gold == resource.data.gold &&
+                       request.resource.data.diamonds == resource.data.diamonds &&
+                       request.resource.data.level == resource.data.level &&
+                       request.resource.data.isBanned == resource.data.isBanned &&
+                       request.resource.data.isMuted == resource.data.isMuted &&
+                       request.resource.data.isVerified == resource.data.isVerified &&
+                       request.resource.data.isVip == resource.data.isVip) ||
+                      isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /player_data/{userId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /global_chat/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isMuted;
+      allow delete: if isModerator();
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+
+    match /forum_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isMuted;
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.authorUid || isModerator());
+      allow delete: if isModerator();
+    }
+
+    match /clans/{clanName} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.leader || isModerator());
+      allow delete: if isAdmin();
+    }
+
+    match /{path=**}/messages/{messageId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid in path || isAdmin());
     }
   }
 }

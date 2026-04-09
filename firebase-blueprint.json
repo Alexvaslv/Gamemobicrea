@@ -5,6 +5,7 @@
       "description": "User profile information stored in Firestore",
       "type": "object",
       "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
         "playerName": { "type": "string", "description": "User nickname" },
         "realName": { "type": "string", "description": "User real name" },
         "country": { "type": "string", "description": "User country" },
@@ -15,12 +16,16 @@
         "isCountryHidden": { "type": "boolean", "description": "Whether to hide country" },
         "isAgeHidden": { "type": "boolean", "description": "Whether to hide age" },
         "isBirthdayHidden": { "type": "boolean", "description": "Whether to hide birthday" },
-        "password": { "type": "string", "description": "User password (hashed or plain)" },
         "email": { "type": "string", "format": "email", "description": "User email" },
         "race": { "type": "string", "description": "Character race" },
         "gender": { "type": "string", "description": "Character gender" },
         "avatarUrl": { "type": "string", "description": "Avatar URL" },
         "level": { "type": "integer", "description": "Character level" },
+        "role": { "type": "string", "enum": ["user", "moderator", "editor", "admin"], "description": "User administrative role" },
+        "isMuted": { "type": "boolean", "description": "Whether the user is muted" },
+        "isBanned": { "type": "boolean", "description": "Whether the user is banned" },
+        "isVerified": { "type": "boolean", "description": "Whether the user is verified" },
+        "isVip": { "type": "boolean", "description": "Whether the user is a VIP" },
         "stats": {
           "type": "object",
           "properties": {
@@ -40,22 +45,22 @@
         "xp": { "type": "integer" },
         "inventory": { "type": "array", "items": { "type": "object" } },
         "equippedItems": { "type": "object" },
-        "messages": { "type": "array", "items": { "type": "object" } },
         "friends": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
+              "uid": { "type": "string" },
               "nickname": { "type": "string" },
               "status": { "type": "string", "enum": ["online", "recent", "offline"] }
             }
           }
         },
         "clanId": { "type": "string", "description": "ID or name of the clan the user belongs to" },
-        "roles": { "type": "array", "items": { "type": "string" }, "description": "User roles (e.g., admin, creator)" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
       },
-      "required": ["playerName", "password", "email", "race", "gender", "createdAt"]
+      "required": ["uid", "playerName", "email", "race", "gender", "createdAt"]
     },
     "Clan": {
       "title": "Clan",
@@ -183,9 +188,13 @@
     }
   },
   "firestore": {
-    "/users/{nickname}": {
+    "/users/{userId}": {
       "schema": { "$ref": "UserProfile" },
-      "description": "User profile documents indexed by nickname"
+      "description": "User profile documents indexed by UID"
+    },
+    "/player_data/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "Alias for user profile data (legacy support)"
     },
     "/clans/{clanName}": {
       "schema": { "$ref": "Clan" },
