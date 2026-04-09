@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Police vs Mafia</string>
+    <string name="title_activity_main">Police vs Mafia</string>
+    <string name="package_name">com.policevsmafia.app</string>
+    <string name="custom_url_scheme">com.policevsmafia.app</string>
+</resources>
