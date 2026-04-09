@@ -2975,8 +2975,8 @@ export default function App() {
                     }
 
                     const newAvatarUrl = regGender === 'male' 
-                      ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                      : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a";
+                      ? "/assets/characters/male_base.png" 
+                      : "/assets/characters/female_base.png";
 
                     const welcomeMessage = {
                       id: "welcome_" + Date.now(),
@@ -3223,11 +3223,11 @@ export default function App() {
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl group-hover:border-lime-500/50 transition-all duration-500">
                     <img 
                       src={avatarUrl || (playerGender === 'male' 
-                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
+                        ? "/assets/characters/male_base.png" 
+                        : "/assets/characters/female_base.png")
                       }
                       alt="Avatar" 
-                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'} opacity-80 group-hover:opacity-100 transition-opacity`}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                       referrerPolicy="no-referrer"
                     />
                   </div>
@@ -3394,11 +3394,11 @@ export default function App() {
                 <div className="absolute inset-0 flex items-center justify-center p-4">
                   <img 
                     src={avatarUrl || (playerGender === 'male' 
-                      ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                      : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
+                      ? "/assets/characters/male_base.png" 
+                      : "/assets/characters/female_base.png")
                     }
                     alt=""
-                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-40' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-40'} filter blur-[0.5px] transition-all duration-700`}
+                    className="w-full h-full object-contain opacity-80 filter transition-all duration-700"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -5554,7 +5554,7 @@ export default function App() {
                       <div className="relative">
                         <div className="w-10 h-10 rounded-xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
                           <img 
-                            src={profile.avatarUrl || "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a"}
+                            src={profile.avatarUrl || (profile.gender === 'female' ? "/assets/characters/female_base.png" : "/assets/characters/male_base.png")}
                             alt="Avatar" 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
@@ -5947,8 +5947,8 @@ export default function App() {
                     <div className="w-24 h-24 rounded-full border-2 border-lime-400/50 overflow-hidden bg-black/40 shadow-[0_0_20px_rgba(163,230,53,0.2)]">
                       <img 
                         src={tempAvatarUrl || (tempGender === 'male' 
-                          ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                          : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")} 
+                          ? "/assets/characters/male_base.png" 
+                          : "/assets/characters/female_base.png")} 
                         alt="Preview"
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -6266,8 +6266,8 @@ export default function App() {
 
                       const user = auth.currentUser;
                       const finalAvatarUrl = tempAvatarUrl || (tempGender === 'male' 
-                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a");
+                        ? "/assets/characters/male_base.png" 
+                        : "/assets/characters/female_base.png");
                       
                       if (user) {
                         try {
@@ -6398,8 +6398,8 @@ export default function App() {
                   
                   const uniqueId = Math.floor(1000000 + Math.random() * 9000000).toString();
                   const newAvatarUrl = tempGender === 'male' 
-                    ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                    : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a";
+                    ? "/assets/characters/male_base.png" 
+                    : "/assets/characters/female_base.png";
                   
                   const user = auth.currentUser;
                   if (user) {
