@@ -3862,14 +3862,7 @@ export default function App() {
               )}
             </div>
 
-            <motion.button 
-              onClick={() => setPage(2)}
-              whileHover={{ scale: 1.02 }} 
-              whileTap={{ scale: 0.95 }} 
-              className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md py-2 rounded-2xl  bg-white/10 border border-white/20 hover:bg-white/20 transition-colors flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-sm"
-            >
-              <ArrowLeft className="w-5 h-5" /> Назад
-            </motion.button>
+
           </motion.div>
         )}
 
@@ -5420,50 +5413,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Bottom Navigation */}
-      <AnimatePresence>
-        {[2, 3, 7, 9, 10].includes(page) && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-40 pb-safe"
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
-            <div className="relative max-w-md mx-auto px-4 pb-4 pt-8">
-              <div className="glass-panel rounded-3xl p-2 flex items-center justify-between relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/5 mix-blend-overlay" />
-                
-                <button onClick={() => setPage(2)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 2 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
-                  <Home className="w-6 h-6 mb-1" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Лобби</span>
-                </button>
-                
-                <button onClick={() => setPage(3)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 3 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
-                  <User className="w-6 h-6 mb-1" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Герой</span>
-                </button>
-                
-                <button onClick={() => setPage(9)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 9 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
-                  <ScrollText className="w-6 h-6 mb-1" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Миссии</span>
-                </button>
-                
-                <button onClick={() => setPage(10)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 10 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
-                  <Flag className="w-6 h-6 mb-1" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Клан</span>
-                </button>
-                
-                <button onClick={() => setPage(7)} className={`relative z-10 flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ${page === 7 ? 'bg-lime-400/20 text-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}>
-                  <ShoppingBag className="w-6 h-6 mb-1" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Магазин</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Edit Profile Modal */}
       <AnimatePresence>
