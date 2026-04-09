@@ -5,17 +5,149 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert, Info, Home } from "lucide-react";
+import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
 import { io, Socket } from "socket.io-client";
-import { ITEMS } from "./items";
-import { savePlayerData, equipItemToFirestore, loadPlayerData, OperationType, handleFirestoreError } from "./services/playerData";
 
 // --- Firestore Data Service ---
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string;
+    email?: string | null;
+    emailVerified?: boolean;
+    isAnonymous?: boolean;
+    tenantId?: string | null;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  toast.error("Ошибка базы данных: " + (error instanceof Error ? error.message : String(error)));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 const PLAYER_DATA_COLLECTION = "player_data";
+
+export async function savePlayerData(userId: string, data: any) {
+  try {
+    await setDoc(doc(db, PLAYER_DATA_COLLECTION, userId), {
+      ...data,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, PLAYER_DATA_COLLECTION + "/" + userId);
+  }
+}
+
+/**
+ * Standalone function to equip an item and save to Firestore.
+ * Adapted from user request to use Firestore instead of Realtime Database.
+ */
+export async function equipItemToFirestore(playerId: string, item: any, slot: string) {
+  try {
+    const playerDocRef = doc(db, PLAYER_DATA_COLLECTION, playerId);
+    const playerDoc = await getDoc(playerDocRef);
+    
+    if (playerDoc.exists()) {
+      const data = playerDoc.data();
+      const equippedItems = data.equippedItems || {};
+      const inventory = data.inventory || [];
+      
+      // Find item in inventory if not provided as full object
+      let itemToEquip = item;
+      let itemIdx = -1;
+      
+      if (typeof item === 'string') {
+        itemIdx = inventory.findIndex((i: any) => i.id === item);
+        if (itemIdx > -1) {
+          itemToEquip = inventory[itemIdx];
+        } else {
+          throw new Error("Item not found in inventory");
+        }
+      }
+
+      const oldItem = equippedItems[slot];
+      const newEquipped = { ...equippedItems, [slot]: itemToEquip };
+      const newInventory = [...inventory];
+      
+      if (itemIdx > -1) {
+        newInventory.splice(itemIdx, 1);
+      } else {
+        // If item was passed as object, we should still try to remove it from inventory by ID
+        const idx = newInventory.findIndex((i: any) => i.id === itemToEquip.id);
+        if (idx > -1) newInventory.splice(idx, 1);
+      }
+      
+      if (oldItem) {
+        newInventory.push(oldItem);
+      }
+
+      await setDoc(playerDocRef, {
+        equippedItems: newEquipped,
+        inventory: newInventory,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      
+      console.log("Вещь сохранена!");
+    }
+  } catch (error) {
+    console.error("Ошибка сохранения вещи:", error);
+    throw error;
+  }
+}
+
+export async function loadPlayerData(userId: string) {
+  try {
+    const docRef = doc(db, PLAYER_DATA_COLLECTION, userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, PLAYER_DATA_COLLECTION + "/" + userId);
+    return null;
+  }
+}
 
 async function testConnection() {
   try {
@@ -77,7 +209,7 @@ const LocationPlayers = ({ location, userLocations, currentUserId }: { location:
 };
 
 const EquipSlot = ({ label, item, onUnequip }: { label: string, item?: Item | null, onUnequip?: () => void }) => (
-  <div className="flex flex-col items-center gap-1 group w-full max-w-[70px] mx-auto">
+  <div className="flex flex-col items-center gap-1 group w-full">
     <div 
       onClick={() => item && onUnequip && onUnequip()}
       className={`w-full aspect-square rounded-2xl relative transition-all duration-500 cursor-pointer overflow-hidden group-hover:scale-105 ${
@@ -722,16 +854,16 @@ export default function App() {
         if (data.race) setPlayerRace(data.race);
         if (data.gender) setPlayerGender(data.gender);
         if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
-        if (typeof data.silver === 'number' && !isNaN(data.silver)) setSilver(data.silver);
-        if (typeof data.iron === 'number' && !isNaN(data.iron)) setIron(data.iron);
-        if (typeof data.gold === 'number' && !isNaN(data.gold)) setGold(data.gold);
-        if (typeof data.diamonds === 'number' && !isNaN(data.diamonds)) setDiamonds(data.diamonds);
-        if (typeof data.xp === 'number' && !isNaN(data.xp)) setXp(data.xp);
+        if (data.silver !== undefined) setSilver(data.silver);
+        if (data.iron !== undefined) setIron(data.iron);
+        if (data.gold !== undefined) setGold(data.gold);
+        if (data.diamonds !== undefined) setDiamonds(data.diamonds);
+        if (data.xp !== undefined) setXp(data.xp);
         if (data.inventory) setInventory(data.inventory);
         if (data.equippedItems) setEquippedItems(data.equippedItems);
         if (data.messages) setMessages(data.messages);
         if (data.hasGiftKey !== undefined) setHasGiftKey(data.hasGiftKey);
-        if (typeof data.prevLevel === 'number' && !isNaN(data.prevLevel)) setPrevLevel(data.prevLevel);
+        if (data.prevLevel !== undefined) setPrevLevel(data.prevLevel);
         if (data.characterStatus) setCharacterStatus(data.characterStatus);
         if (data.realName) setRealName(data.realName);
         if (data.birthYear) setBirthYear(data.birthYear);
@@ -745,14 +877,14 @@ export default function App() {
         if (data.friends) setFriends(data.friends);
         if (data.clanId) setClanId(data.clanId);
         else setClanId(null);
-        if (typeof data.forestProgress === 'number' && !isNaN(data.forestProgress)) setForestProgress(data.forestProgress);
-        if (typeof data.mountainProgress === 'number' && !isNaN(data.mountainProgress)) setMountainProgress(data.mountainProgress);
-        if (typeof data.blackWolfKills === 'number' && !isNaN(data.blackWolfKills)) setBlackWolfKills(data.blackWolfKills);
-        if (typeof data.spentStrength === 'number' && !isNaN(data.spentStrength)) setSpentStrength(data.spentStrength);
-        if (typeof data.spentAgility === 'number' && !isNaN(data.spentAgility)) setSpentAgility(data.spentAgility);
-        if (typeof data.spentIntuition === 'number' && !isNaN(data.spentIntuition)) setSpentIntuition(data.spentIntuition);
-        if (typeof data.spentEndurance === 'number' && !isNaN(data.spentEndurance)) setSpentEndurance(data.spentEndurance);
-        if (typeof data.spentWisdom === 'number' && !isNaN(data.spentWisdom)) setSpentWisdom(data.spentWisdom);
+        if (data.forestProgress !== undefined) setForestProgress(data.forestProgress);
+        if (data.mountainProgress !== undefined) setMountainProgress(data.mountainProgress);
+        if (data.blackWolfKills !== undefined) setBlackWolfKills(data.blackWolfKills);
+        if (data.spentStrength !== undefined) setSpentStrength(data.spentStrength);
+        if (data.spentAgility !== undefined) setSpentAgility(data.spentAgility);
+        if (data.spentIntuition !== undefined) setSpentIntuition(data.spentIntuition);
+        if (data.spentEndurance !== undefined) setSpentEndurance(data.spentEndurance);
+        if (data.spentWisdom !== undefined) setSpentWisdom(data.spentWisdom);
         if (data.playerBadges) setPlayerBadges(data.playerBadges);
         if (data.playerStatus) setPlayerStatus(data.playerStatus);
         if (data.roles) setUserRoles(data.roles);
@@ -843,9 +975,6 @@ export default function App() {
     };
   });
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
-  const [inventoryFilterType, setInventoryFilterType] = useState<string>("all");
-  const [inventoryFilterRarity, setInventoryFilterRarity] = useState<string>("all");
-  const [inventorySortOrder, setInventorySortOrder] = useState<'asc' | 'desc' | 'none'>('none');
   const [lastXpGained, setLastXpGained] = useState(0);
   const [forestProgress, setForestProgress] = useState(() => parseInt(localStorage.getItem("rpg_forest_progress") || "0", 10) || 0);
   const [mountainProgress, setMountainProgress] = useState(() => parseInt(localStorage.getItem("rpg_mountain_progress") || "0", 10) || 0);
@@ -1684,7 +1813,7 @@ export default function App() {
 
   const handleVictory = () => {
     let gainedXp = 0;
-    const isPackLeader = forestProgress === 3;
+    let isPackLeader = forestProgress === 3;
     
     if (isPackLeader) {
        const targetLevel = Math.floor(Math.random() * 2) + 5; // 5, 6
@@ -1775,7 +1904,7 @@ export default function App() {
       };
     };
 
-    const finalDrops: Item[] = [];
+    let finalDrops: Item[] = [];
     // Only novice items drop now, 40% chance
     if (Math.random() < 0.40) {
       const noviceItems = [
@@ -1817,7 +1946,7 @@ export default function App() {
   return (
     <div 
       ref={scrollContainerRef}
-      className="min-h-[100dvh] overflow-x-hidden relative bg-gradient-to-b from-zinc-950 via-zinc-900 to-black"
+      className="min-h-[100dvh] overflow-x-hidden relative bg-transparent"
     >
       <Toaster theme="dark" position="top-center" />
       
@@ -1843,121 +1972,98 @@ export default function App() {
         {page === 1 && (
           <motion.div
             key="page1"
-            className="flex flex-col items-center justify-center min-h-[100dvh] px-4 relative overflow-hidden bg-transparent"
+            className="flex flex-col items-center justify-center min-h-[100dvh] gap-2"
             initial={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "-100vh" }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Mobile Game Engine Gradients */}
-            <div className="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-pulse" />
-            <div className="absolute bottom-[-10%] right-[-20%] w-[70vw] h-[70vw] bg-blue-600/30 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
-            <div className="absolute top-[30%] right-[10%] w-[50vw] h-[50vw] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[90px] animate-pulse" style={{ animationDelay: '1s' }} />
-
             <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.1, ease: "easeOut" }}
+              className="mb-[-1rem] opacity-20"
+            >
+              <Crown className="w-32 h-32 text-zinc-300" fill="currentColor" strokeWidth={1} />
+            </motion.div>
+            <motion.h1
+              className="text-zinc-50 text-5xl md:text-7xl font-serif tracking-widest text-center uppercase"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="w-full max-w-md relative z-10 flex flex-col items-center"
+              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
             >
-              {/* Glowing Crown */}
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.1 }}
-                className="relative mb-8"
-              >
-                <div className="absolute inset-0 bg-purple-500 blur-3xl opacity-60 rounded-full" />
-                <Crown className="w-28 h-28 text-white relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]" strokeWidth={1} />
-              </motion.div>
-
-              <motion.h1
-                className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 mb-4 text-center uppercase tracking-widest drop-shadow-2xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                Nation of Light
-                <br />
-                <span className="text-2xl md:text-3xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">and Darkness</span>
-              </motion.h1>
-              
-              <motion.p
-                className="text-zinc-300 text-center text-sm md:text-base mb-12 max-w-xs font-medium drop-shadow-md"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 0.6 }}
-              >
-                Enter the realm. Forge your destiny.
-              </motion.p>
-
-              {!isLoggedIn ? (
-                <div className="w-full space-y-4">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
-                        const googleProvider = new GoogleAuthProvider();
-                        const result = await signInWithPopup(auth, googleProvider);
-                        const user = result.user;
-                        
-                        let userDoc;
-                        try {
-                          userDoc = await getDoc(doc(db, "users", user.uid));
-                        } catch (error: any) {
-                          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-                          return;
-                        }
-                        
-                        if (userDoc.exists()) {
-                          const data = userDoc.data();
-                          setPlayerName(data.username || data.playerName);
-                          setPlayerEmail(data.email || data.playerEmail);
-                          if (data.race) setPlayerRace(data.race);
-                          if (data.gender) setPlayerGender(data.gender);
-                          if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
-                          setIsLoggedIn(true);
-                          setHasCompletedOnboarding(true);
-                          setPage(2);
-                          toast.success("С возвращением через Google!");
-                        } else {
-                          // New user
-                          setPlayerEmail(user.email || "");
-                          setShowOnboarding(true);
-                          setPage(14); // Go to character creation
-                          toast.success("Добро пожаловать! Завершите создание персонажа.");
-                        }
-                      } catch (error: any) {
-                        toast.error("Ошибка авторизации Google: " + error.message);
-                      }
-                    }}
-                    className="relative w-full group"
-                  >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rounded-2xl blur opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                    <div className="relative w-full py-4 px-4 rounded-2xl bg-zinc-900/90 border border-white/10 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
-                      <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                      </svg>
-                      Войти через Google
-                    </div>
-                  </button>
-                </div>
-              ) : (
+              Nation of Light and Darkness
+            </motion.h1>
+            <motion.p
+              className="text-zinc-400 text-center max-w-sm text-base mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+            >
+              Welcome, traveler. Your journey in the Nation of Light and Darkness begins here.
+            </motion.p>
+            {!isLoggedIn ? (
+              <div className="flex flex-col gap-2 w-full">
                 <button
-                  onClick={() => {
-                    setPage(2);
+                  onClick={async () => {
+                    try {
+                      const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                      const googleProvider = new GoogleAuthProvider();
+                      const result = await signInWithPopup(auth, googleProvider);
+                      const user = result.user;
+                      
+                      let userDoc;
+                      try {
+                        userDoc = await getDoc(doc(db, "users", user.uid));
+                      } catch (error: any) {
+                        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+                        return;
+                      }
+                      
+                      if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setPlayerName(data.username || data.playerName);
+                        setPlayerEmail(data.email || data.playerEmail);
+                        if (data.race) setPlayerRace(data.race);
+                        if (data.gender) setPlayerGender(data.gender);
+                        if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
+                        setIsLoggedIn(true);
+                        setHasCompletedOnboarding(true);
+                        setPage(2);
+                        toast.success("С возвращением через Google!");
+                      } else {
+                        // New user
+                        setPlayerEmail(user.email || "");
+                        setShowOnboarding(true);
+                        setPage(14); // Go to character creation
+                        toast.success("Добро пожаловать! Завершите создание персонажа.");
+                      }
+                    } catch (error: any) {
+                      toast.error("Ошибка авторизации Google: " + error.message);
+                    }
                   }}
-                  className="relative w-full group"
+                  className="w-full py-4 rounded-2xl bg-white text-zinc-950 font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-2xl blur opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                  <div className="relative w-full py-4 px-4 rounded-2xl bg-zinc-900/90 border border-white/10 text-white font-black text-lg flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all uppercase tracking-widest shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
-                    В игру
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
                   </div>
+                  Войти через Google
                 </button>
-              )}
-            </motion.div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setPage(2);
+                }}
+                className="btn-primary"
+              >
+                В игру
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -2741,7 +2847,7 @@ export default function App() {
                   </div>
                 </button>
                 <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
-                <button id="settings-button" onClick={() => setPage(11)} className="p-2.5 bg-lime-400 text-lime-950 border border-lime-400/50 rounded-2xl hover:bg-lime-300 transition-colors shadow-lg shadow-lime-400/20">
+                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
                   <Settings className="w-5 h-5" />
                 </button>
               </div>
@@ -2950,9 +3056,9 @@ export default function App() {
             </div>
 
             {/* Character & Slots */}
-            <div className="mt-4 grid gap-2 md:gap-4 items-center" style={{ gridTemplateColumns: '1fr 200px 1fr' }}>
+            <div className="character mt-4">
               {/* Left Column */}
-              <div className="flex flex-col justify-between h-[450px]">
+              <div className="flex flex-col justify-between h-full" style={{ gridColumn: 1, gridRow: '1 / span 3' }}>
                 <EquipSlot label="Шлем" item={equippedItems["Шлем"]} onUnequip={() => unequipItem("Шлем")} />
                 <EquipSlot label="Наручи" item={equippedItems["Наручи"]} onUnequip={() => unequipItem("Наручи")} />
                 <EquipSlot label="Меч" item={equippedItems["Меч"]} onUnequip={() => unequipItem("Меч")} />
@@ -2961,46 +3067,22 @@ export default function App() {
               </div>
 
               {/* Center Silhouette */}
-              <div 
-                className="relative flex items-center justify-center overflow-hidden mx-auto" 
-                style={{ 
-                  width: '200px',
-                  height: '450px', 
-                  borderRadius: '24px',
-                  background: 'linear-gradient(180deg, rgba(20,20,35,0.95) 0%, rgba(10,10,18,0.98) 100%)',
-                  border: '1px solid rgba(120,120,255,0.25)',
-                  boxShadow: '0 0 20px rgba(0,180,255,0.18), 0 0 40px rgba(120,0,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05)'
-                }}
-              >
-                {/* Inner Blur & Background Glow */}
-                <div className="absolute inset-0 backdrop-blur-sm rounded-[24px]" />
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-purple-500/10 rounded-[24px]" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-blue-500/20 blur-[40px] rounded-full" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-purple-500/20 blur-[40px] rounded-full" />
-
-                {/* Header: "ГЕРОЙ" */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-blue-300/80 font-black drop-shadow-[0_0_8px_rgba(0,180,255,0.8)]">
-                    ГЕРОЙ
-                  </span>
-                </div>
-
+              <div className="avatar rounded-3xl border-2 border-white/5 relative shadow-2xl overflow-hidden flex items-center justify-center" style={{ gridRow: '1 / span 3' }}>
                 {/* Nickname above Avatar */}
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                  <span className="text-xs uppercase tracking-[0.1em] text-white font-bold drop-shadow-md">
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-full text-center z-20">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-lime-400/60 font-black drop-shadow-sm">
                     {playerName}
                   </span>
                 </div>
 
-                {/* Avatar / Silhouette */}
-                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
+                <div className="absolute inset-0 flex items-center justify-center p-4">
                   <img 
                     src={avatarUrl || (playerGender === 'male' 
                       ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                       : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                     }
                     alt=""
-                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-60' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-60'} filter drop-shadow-[0_0_15px_rgba(120,120,255,0.4)] transition-all duration-700`}
+                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-40' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-40'} filter blur-[0.5px] transition-all duration-700`}
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -3009,36 +3091,31 @@ export default function App() {
                     }}
                   />
                 </div>
-                
-                {/* Fallback Silhouette */}
-                <div className="fallback-silhouette hidden absolute inset-0 flex items-center justify-center z-10">
-                  {playerGender === 'male' ? <Swords className="w-32 h-32 text-blue-400/50 filter drop-shadow-[0_0_10px_rgba(0,180,255,0.5)]" /> : <User className="w-32 h-32 text-purple-400/50 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]" />}
+                <div className="fallback-silhouette hidden absolute inset-0 flex items-center justify-center">
+                  {playerGender === 'male' ? <Swords className="w-40 h-40 text-blue-500/40 filter blur-[1px]" /> : <User className="w-40 h-40 text-pink-500/40 filter blur-[1px]" />}
                 </div>
-                
-                {/* Decorative Bottom Light */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-blue-900/40 to-transparent pointer-events-none z-10" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-blue-400/50 blur-[2px] rounded-t-full z-20" />
+                <div className={`absolute inset-0 bg-gradient-to-t ${playerGender === 'male' ? 'from-blue-900/20' : 'from-pink-900/20'} to-transparent pointer-events-none`} />
                 
                 {/* Energy Particles (CSS simulated) */}
-                <div className="absolute inset-0 opacity-50 pointer-events-none z-10">
-                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-blue-300 rounded-full animate-ping shadow-[0_0_5px_#93c5fd]" />
-                  <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-purple-300 rounded-full animate-ping delay-300 shadow-[0_0_5px_#d8b4fe]" />
-                  <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-ping delay-700 shadow-[0_0_5px_#ffffff]" />
+                <div className="absolute inset-0 opacity-30 pointer-events-none">
+                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-white rounded-full animate-ping" />
+                  <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-white rounded-full animate-ping delay-300" />
+                  <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-ping delay-700" />
                 </div>
                 
                 {/* Overlay icons for equipped items */}
-                <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 p-4 opacity-40 pointer-events-none z-10">
+                <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 p-4 opacity-30 pointer-events-none">
                   {(Object.values(equippedItems) as (Item | null)[]).map((item, i) => {
                     if (!item) return <div key={i} />;
                     const name = item.name.toLowerCase();
                     return (
                       <div key={i} className="flex items-center justify-center">
-                        {name.includes("меч") && <Swords className="w-4 h-4 text-blue-300" />}
-                        {name.includes("щит") && <Shield className="w-4 h-4 text-blue-300" />}
-                        {name.includes("лук") && <Wind className="w-4 h-4 text-blue-300" />}
-                        {name.includes("топор") && <Gavel className="w-4 h-4 text-blue-300" />}
-                        {name.includes("посох") && <Star className="w-4 h-4 text-blue-300" />}
-                        {name.includes("рубашка") && <User className="w-4 h-4 text-blue-300" />}
+                        {name.includes("меч") && <Swords className="w-4 h-4 text-lime-300" />}
+                        {name.includes("щит") && <Shield className="w-4 h-4 text-lime-300" />}
+                        {name.includes("лук") && <Wind className="w-4 h-4 text-lime-300" />}
+                        {name.includes("топор") && <Gavel className="w-4 h-4 text-lime-300" />}
+                        {name.includes("посох") && <Star className="w-4 h-4 text-lime-300" />}
+                        {name.includes("рубашка") && <User className="w-4 h-4 text-lime-300" />}
                       </div>
                     );
                   })}
@@ -3046,8 +3123,8 @@ export default function App() {
 
                 {/* Clan Name below Avatar */}
                 {clanId && (
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                    <span className="text-[9px] uppercase tracking-widest text-purple-300 font-bold drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]">
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full text-center z-20">
+                    <span className="text-[9px] uppercase tracking-widest text-purple-400 font-bold drop-shadow-sm">
                       &lt;{clanId}&gt;
                     </span>
                   </div>
@@ -3055,7 +3132,7 @@ export default function App() {
               </div>
 
               {/* Right Column */}
-              <div className="flex flex-col justify-between h-[450px]">
+              <div className="flex flex-col justify-between h-full" style={{ gridColumn: 3, gridRow: '1 / span 3' }}>
                 <EquipSlot label="Ожерелье" item={equippedItems["Ожерелье"]} onUnequip={() => unequipItem("Ожерелье")} />
                 <EquipSlot label="Перчатки" item={equippedItems["Перчатки"]} onUnequip={() => unequipItem("Перчатки")} />
                 <EquipSlot label="Второе оружие" item={equippedItems["Второе оружие"]} onUnequip={() => unequipItem("Второе оружие")} />
@@ -3475,7 +3552,10 @@ export default function App() {
             {/* Full Inventory Integrated */}
             <div className={`mt-4 bg-white/5 border ${isInventoryExpanded ? 'border-lime-400/20' : 'border-white/5'} rounded-2xl p-3 w-full overflow-hidden transition-all duration-300`}>
               <button 
-                onClick={() => setIsInventoryExpanded(!isInventoryExpanded)}
+                onClick={() => {
+                  setIsInventoryExpanded(!isInventoryExpanded);
+                  setInventoryTab("equipment");
+                }}
                 className="flex justify-between items-center w-full group"
               >
                 <div className="flex items-center gap-2">
@@ -3499,145 +3579,335 @@ export default function App() {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="pt-4 flex flex-col gap-4">
-                      {/* Selected Item Card */}
-                      {selectedItemIdx !== null && (
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                          <div className={`w-16 h-16 rounded-lg bg-zinc-900 border flex items-center justify-center overflow-hidden shrink-0 ${
-                            ITEMS[selectedItemIdx].rarity === 'legendary' ? 'border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]' :
-                            ITEMS[selectedItemIdx].rarity === 'epic' ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
-                            ITEMS[selectedItemIdx].rarity === 'rare' ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
-                            'border-white/20'
-                          }`}>
-                            <img 
-                              src={ITEMS[selectedItemIdx].icon} 
-                              alt={`Item ${selectedItemIdx + 1}`}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <h3 className={`text-sm font-bold ${
-                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'text-orange-400' :
-                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'text-purple-400' :
-                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'text-blue-400' :
-                              'text-zinc-300'
-                            }`}>Предмет #{selectedItemIdx + 1}</h3>
-                            <p className="text-[10px] text-zinc-400 mt-1">ID: {ITEMS[selectedItemIdx].id}</p>
-                            <p className="text-[9px] uppercase tracking-widest mt-1 opacity-70">
-                              {ITEMS[selectedItemIdx].rarity === 'legendary' ? 'Легендарный' :
-                               ITEMS[selectedItemIdx].rarity === 'epic' ? 'Эпический' :
-                               ITEMS[selectedItemIdx].rarity === 'rare' ? 'Редкий' : 'Обычный'}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Filters and Sort */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 flex-1">
-                            {['all', 'weapon', 'armor', 'elixir', 'book', 'chest'].map(type => (
-                              <button
-                                key={type}
-                                onClick={() => setInventoryFilterType(type)}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                                  inventoryFilterType === type 
-                                    ? 'bg-lime-400 text-lime-950 shadow-[0_0_10px_rgba(163,230,53,0.3)]' 
-                                    : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
-                                }`}
-                              >
-                                {type === 'all' ? 'Все типы' : 
-                                 type === 'weapon' ? 'Оружие' : 
-                                 type === 'armor' ? 'Броня' : 
-                                 type === 'elixir' ? 'Эликсиры' : 
-                                 type === 'book' ? 'Книги' : 'Сундуки'}
-                              </button>
-                            ))}
-                          </div>
+                    <div className="pt-4">
+                      {/* Tabs */}
+                      <div className="flex gap-2 mb-4">
+                        {[
+                          { id: "equipment", label: "Снаряжение", icon: Swords },
+                          { id: "books", label: "Книги", icon: BookOpen },
+                          { id: "elixirs", label: "Эликсиры", icon: FlaskConical },
+                          { id: "chests", label: "Сундуки", icon: Package },
+                        ].map((tab) => (
                           <button
-                            onClick={() => setInventorySortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none')}
-                            className={`p-1.5 rounded-xl border transition-all shrink-0 flex items-center justify-center ${
-                              inventorySortOrder !== 'none' 
-                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                                : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
+                            key={tab.id}
+                            onClick={() => {
+                              setInventoryTab(tab.id as any);
+                              setSelectedItemIdx(null);
+                            }}
+                            className={`flex-1 py-2 rounded-2xl border flex flex-col items-center gap-1 transition-all duration-300 ${
+                              inventoryTab === tab.id 
+                                ? "bg-lime-400/20 border-lime-400/50 text-lime-300 shadow-[0_0_15px_rgba(245,158,11,0.1)]" 
+                                : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10"
                             }`}
-                            title="Сортировка по имени"
                           >
-                            <ArrowLeft className={`w-4 h-4 transition-transform ${inventorySortOrder === 'desc' ? '-rotate-90' : 'rotate-90'}`} />
+                            <tab.icon className="w-4 h-4" />
+                            <span className="text-[8px] uppercase font-bold tracking-tighter">{tab.label}</span>
                           </button>
-                        </div>
-                        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                          {['all', 'common', 'rare', 'epic', 'legendary'].map(rarity => (
-                            <button
-                              key={rarity}
-                              onClick={() => setInventoryFilterRarity(rarity)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                                inventoryFilterRarity === rarity 
-                                  ? 'bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.3)]' 
-                                  : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
-                              }`}
-                            >
-                              {rarity === 'all' ? 'Любая редкость' : 
-                               rarity === 'common' ? 'Обычный' : 
-                               rarity === 'rare' ? 'Редкий' : 
-                               rarity === 'epic' ? 'Эпический' : 'Легендарный'}
-                            </button>
-                          ))}
-                        </div>
+                        ))}
                       </div>
 
                       {/* Grid */}
-                      <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                        {ITEMS.map((item, idx) => ({ item, idx }))
-                          .filter(({ item }) => {
-                            if (inventoryFilterType !== 'all' && item.type !== inventoryFilterType) return false;
-                            if (inventoryFilterRarity !== 'all' && item.rarity !== inventoryFilterRarity) return false;
-                            return true;
-                          })
-                          .sort((a, b) => {
-                            if (inventorySortOrder === 'none') return 0;
-                            const nameA = `Предмет #${a.idx + 1}`;
-                            const nameB = `Предмет #${b.idx + 1}`;
-                            if (inventorySortOrder === 'asc') {
-                              return nameA.localeCompare(nameB, 'ru', { numeric: true });
-                            } else {
-                              return nameB.localeCompare(nameA, 'ru', { numeric: true });
-                            }
-                          })
-                          .map(({ item, idx }) => {
+                      <div className="grid grid-cols-5 gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                        {Array.from({ length: 50 }).map((_, idx) => {
+                          const isOpen = idx < 10;
+                          const currentInv = inventoryTab === "equipment" ? inventory : inventoryTab === "books" ? booksInventory : inventoryTab === "elixirs" ? elixirsInventory : chestsInventory;
+                          const item = isOpen ? currentInv[idx] : null;
                           const isSelected = selectedItemIdx === idx;
-                          
-                          const rarityColors = {
-                            common: "bg-zinc-900/80 border-white/10 hover:border-white/30",
-                            rare: "bg-blue-950/40 border-blue-500/30 hover:border-blue-500/50",
-                            epic: "bg-purple-950/40 border-purple-500/30 hover:border-purple-500/50",
-                            legendary: "bg-orange-950/40 border-orange-500/30 hover:border-orange-500/50"
-                          };
-                          
-                          const selectedColors = {
-                            common: "bg-zinc-800 border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10",
-                            rare: "bg-blue-900/40 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] z-10",
-                            epic: "bg-purple-900/40 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] z-10",
-                            legendary: "bg-orange-900/40 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)] z-10"
-                          };
 
                           return (
-                            <div key={item.id} className="relative aspect-square">
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setSelectedItemIdx(isSelected ? null : idx)}
-                                className={`w-full h-full rounded-xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
-                                  isSelected ? selectedColors[item.rarity] : rarityColors[item.rarity]
+                            <div key={idx} className="relative aspect-square">
+                              <motion.div
+                                whileHover={isOpen ? { scale: 1.05 } : {}}
+                                whileTap={isOpen ? { scale: 0.95 } : {}}
+                                onClick={() => {
+                                  if (isOpen && item) {
+                                    setSelectedItemIdx(isSelected ? null : idx);
+                                  }
+                                }}
+                                className={`w-full h-full rounded-2xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
+                                  !isOpen 
+                                    ? "bg-black/40 border-white/5 opacity-40 cursor-not-allowed" 
+                                    : isSelected
+                                      ? "bg-lime-400/20 border-lime-300 shadow-[0_0_15px_rgba(163,230,53,0.2)] z-10"
+                                      : item
+                                        ? (inventoryTab === "equipment" && (item as Item).rarity === 'common' 
+                                            ? "bg-zinc-900/80/80 border-white/40 shadow-[0_0_10px_rgba(255,255,255,0.1)] cursor-pointer" 
+                                            : "bg-zinc-900/80/80 border-white/20 hover:border-white/40 cursor-pointer")
+                                        : "bg-black/20 border-white/5 cursor-default"
                                 }`}
                               >
-                                <img 
-                                  src={item.icon} 
-                                  alt={`Item ${idx + 1}`}
-                                  className="w-3/4 h-3/4 object-contain"
-                                  loading="lazy"
-                                />
-                              </motion.button>
+                                {!isOpen ? (
+                                  <Lock className="w-4 h-4 text-zinc-700" />
+                                ) : item ? (
+                                  <div className={`w-full h-full rounded-2xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
+                                    inventoryTab === "equipment" && (item as Item).rarity === 'legendary' ? 'bg-orange-950/40 border-orange-500/50' :
+                                    inventoryTab === "equipment" && (item as Item).rarity === 'epic' ? 'bg-purple-950/40 border-purple-500/50' :
+                                    inventoryTab === "equipment" && (item as Item).rarity === 'rare' ? 'bg-blue-950/40 border-blue-500/50' :
+                                    inventoryTab === "equipment" && (item as Item).rarity === 'uncommon' ? 'bg-green-950/40 border-green-500/50' :
+                                    "bg-zinc-900/80/80 border-white/20"
+                                  }`}>
+                                    <div className="flex flex-col items-center justify-center p-1">
+                                      {inventoryTab === "equipment" || inventoryTab === "chests" ? (
+                                        <>
+                                          {inventoryTab === "equipment" && (
+                                            <>
+                                              {(item as Item).name.toLowerCase().includes("меч") && <Swords className="w-5 h-5 text-zinc-200" />}
+                                              {(item as Item).name.toLowerCase().includes("щит") && <Shield className="w-5 h-5 text-zinc-200" />}
+                                              {(item as Item).name.toLowerCase().includes("лук") && <Wind className="w-5 h-5 text-zinc-200" />}
+                                              {(item as Item).name.toLowerCase().includes("топор") && <Gavel className="w-5 h-5 text-zinc-200" />}
+                                              {(item as Item).name.toLowerCase().includes("посох") && <Star className="w-5 h-5 text-zinc-200" />}
+                                              {(item as Item).name.toLowerCase().includes("рубашка") && <User className="w-5 h-5 text-zinc-200" />}
+                                              {!(item as Item).name.toLowerCase().includes("меч") && !(item as Item).name.toLowerCase().includes("щит") && !(item as Item).name.toLowerCase().includes("лук") && !(item as Item).name.toLowerCase().includes("топор") && !(item as Item).name.toLowerCase().includes("посох") && !(item as Item).name.toLowerCase().includes("рубашка") && <Package className="w-5 h-5 text-zinc-200" />}
+                                            </>
+                                          )}
+                                          {inventoryTab === "chests" && (
+                                            <div className="relative">
+                                              <Package className="w-5 h-5 text-lime-300" />
+                                              {!hasGiftKey && (
+                                                <div className="absolute -top-1 -right-1 bg-red-500/20 rounded-full p-0.5 border border-red-500/50">
+                                                  <Lock className="w-2 h-2 text-red-400" />
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          {inventoryTab === "books" && <BookOpen className="w-5 h-5 text-zinc-200" />}
+                                          {inventoryTab === "elixirs" && <FlaskConical className="w-5 h-5 text-zinc-200" />}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                )}
+                              </motion.div>
+                              
+                              {/* Item Details Popup (Overlay) */}
+                              <AnimatePresence>
+                                {isSelected && item && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    className="absolute top-full left-0 right-0 mt-2 z-50 glass-card border border-white/20 rounded-2xl p-3 shadow-2xl min-w-[180px]"
+                                    style={{ left: idx % 5 > 2 ? 'auto' : 0, right: idx % 5 > 2 ? 0 : 'auto' }}
+                                  >
+                                    <div className="mb-3">
+                                      <div className="text-xs font-bold text-lime-300 mb-0.5 truncate">
+                                        {inventoryTab === "equipment" || inventoryTab === "chests" ? (item as Item).name : (item as string)}
+                                      </div>
+                                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest flex justify-between">
+                                        <span>{inventoryTab === "equipment" ? "Снаряжение" : inventoryTab === "books" ? "Книга" : inventoryTab === "elixirs" ? "Эликсир" : "Сундук"}</span>
+                                        {inventoryTab === "equipment" && <span>Ур. {(item as Item).level}</span>}
+                                      </div>
+                                    </div>
+
+                                    {inventoryTab === "chests" && (item as Item).chestRewards && (
+                                      <div className="mb-3 space-y-1 bg-black/40 p-2 rounded-lg border border-white/5">
+                                        <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-1">Содержимое:</div>
+                                        {(item as Item).chestRewards?.iron && <div className="text-[10px] text-zinc-400">Железо: <span className="text-white">{(item as Item).chestRewards?.iron}</span></div>}
+                                        {(item as Item).chestRewards?.silver && <div className="text-[10px] text-zinc-400">Серебро: <span className="text-white">{(item as Item).chestRewards?.silver}</span></div>}
+                                        {(item as Item).chestRewards?.gold && <div className="text-[10px] text-zinc-400">Золото: <span className="text-white">{(item as Item).chestRewards?.gold}</span></div>}
+                                        {(item as Item).chestRewards?.diamonds && <div className="text-[10px] text-zinc-400">Алмазы: <span className="text-white">{(item as Item).chestRewards?.diamonds}</span></div>}
+                                      </div>
+                                    )}
+
+                                    {inventoryTab === "equipment" && (
+                                      <div className="mb-3 space-y-1 bg-black/40 p-2 rounded-lg border border-white/5">
+                                        <div className="flex justify-between items-center text-[10px] mb-1 pb-1 border-b border-white/5">
+                                          <span className="text-lime-300 font-bold">Бонус:</span>
+                                          <span className="text-lime-300 font-bold">+{ (item as Item).bonusPercent }%</span>
+                                        </div>
+                                        {(() => {
+                                          const equipment = item as Item;
+                                          let slot = "";
+                                          if (equipment.name.toLowerCase().includes("меч") || equipment.name.toLowerCase().includes("лук") || equipment.name.toLowerCase().includes("топор") || equipment.name.toLowerCase().includes("посох")) slot = "Меч";
+                                          else if (equipment.name.toLowerCase().includes("щит")) slot = "Второе оружие";
+                                          else if (equipment.name.toLowerCase().includes("рубашка")) slot = "Рубашка";
+                                          
+                                          const equipped = slot ? equippedItems[slot] : null;
+
+                                          return Object.entries(equipment.stats).map(([key, val]) => {
+                                            if (val === 0) return null;
+                                            const equippedVal = equipped ? (equipped.stats as any)[key] : 0;
+                                            const diff = val - equippedVal;
+                                            const statLabel = key === "strength" ? "Сил" : key === "agility" ? "Лов" : key === "intuition" ? "Инт" : key === "endurance" ? "Вын" : "Муд";
+                                            
+                                            return (
+                                              <div key={key} className="flex justify-between items-center text-[10px]">
+                                                <span className="text-zinc-400">{statLabel}:</span>
+                                                <div className="flex items-center gap-1">
+                                                  <span className="text-white font-mono">{val}</span>
+                                                  {equipped && diff !== 0 && (
+                                                    <span className={`text-[8px] font-bold ${diff > 0 ? "text-green-400" : "text-red-400"}`}>
+                                                      ({diff > 0 ? "+" : ""}{diff})
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          });
+                                        })()}
+                                        {(() => {
+                                          const equipment = item as Item;
+                                          if (equipment.mana_cost === undefined && equipment.spell_power === undefined && equipment.cooldown_reduction === undefined) return null;
+                                          return (
+                                            <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+                                              {equipment.mana_cost !== undefined && (
+                                                <div className="flex justify-between items-center text-[10px]">
+                                                  <span className="text-blue-400">Расход маны:</span>
+                                                  <span className="text-white font-mono">{equipment.mana_cost}</span>
+                                                </div>
+                                              )}
+                                              {equipment.spell_power !== undefined && (
+                                                <div className="flex justify-between items-center text-[10px]">
+                                                  <span className="text-purple-400">Сила заклинаний:</span>
+                                                  <span className="text-white font-mono">+{equipment.spell_power}</span>
+                                                </div>
+                                              )}
+                                              {equipment.cooldown_reduction !== undefined && (
+                                                <div className="flex justify-between items-center text-[10px]">
+                                                  <span className="text-cyan-400">Перезарядка:</span>
+                                                  <span className="text-white font-mono">-{equipment.cooldown_reduction}%</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 gap-1.5">
+                                      {inventoryTab === "equipment" ? (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            equipItem(idx);
+                                          }}
+                                          className="w-full py-2 bg-blue-900/30 border border-blue-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-blue-400 hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                          <CheckCircle2 className="w-4 h-4" /> Экипировать
+                                        </button>
+                                      ) : inventoryTab === "chests" ? (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!hasGiftKey) {
+                                              toast.error("Для открытия этого сундука необходимо Кольцо-ключ, которое присылают на почту при достижении 5 уровня!");
+                                              return;
+                                            }
+                                            const chest = item as Item;
+                                            if (chest.chestRewards) {
+                                              if (chest.chestRewards.iron) setIron(prev => prev + chest.chestRewards!.iron!);
+                                              if (chest.chestRewards.silver) setSilver(prev => prev + chest.chestRewards!.silver!);
+                                              if (chest.chestRewards.gold) setGold(prev => prev + chest.chestRewards!.gold!);
+                                              if (chest.chestRewards.diamonds) setDiamonds(prev => prev + chest.chestRewards!.diamonds!);
+                                              
+                                              setChestsInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                              setSelectedItemIdx(null);
+                                            }
+                                          }}
+                                          className="w-full py-2 bg-lime-400/20 border border-lime-400/50 rounded-lg text-[10px] font-bold uppercase tracking-widest text-lime-300 hover:bg-lime-400/30 transition-colors"
+                                        >
+                                          Открыть
+                                        </button>
+                                      ) : (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Placeholder for use logic
+                                            if (inventoryTab === "books") {
+                                              setBooksInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                            } else {
+                                              setElixirsInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                            }
+                                            setSelectedItemIdx(null);
+                                          }}
+                                          className="w-full py-2 bg-green-900/30 border border-green-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-green-400 hover:bg-green-900/50 transition-colors"
+                                        >
+                                          Использовать
+                                        </button>
+                                      )}
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (inventoryTab === "equipment") {
+                                            dismantleItem(idx);
+                                          } else {
+                                            setIron(prev => prev + 1);
+                                            if (inventoryTab === "books") {
+                                              setBooksInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                            } else if (inventoryTab === "elixirs") {
+                                              setElixirsInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                            } else if (inventoryTab === "chests") {
+                                              setChestsInventory(prev => {
+                                                const newInv = [...prev];
+                                                newInv.splice(idx, 1);
+                                                return newInv;
+                                              });
+                                            }
+                                            setSelectedItemIdx(null);
+                                            toast.success("Предмет разобран на 1 ед. железа");
+                                          }
+                                        }}
+                                        className="w-full py-2 bg-blue-900/30 border border-blue-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-blue-400 hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
+                                      >
+                                        <Gavel className="w-4 h-4" /> Разобрать
+                                      </button>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (inventoryTab === "equipment") {
+                                            setInventory(prev => {
+                                              const newInv = [...prev];
+                                              newInv.splice(idx, 1);
+                                              return newInv;
+                                            });
+                                          } else if (inventoryTab === "books") {
+                                            setBooksInventory(prev => {
+                                              const newInv = [...prev];
+                                              newInv.splice(idx, 1);
+                                              return newInv;
+                                            });
+                                          } else {
+                                            setElixirsInventory(prev => {
+                                              const newInv = [...prev];
+                                              newInv.splice(idx, 1);
+                                              return newInv;
+                                            });
+                                          }
+                                          setSelectedItemIdx(null);
+                                        }}
+                                        className="w-full py-2 bg-red-900/30 border border-red-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-900/50 transition-colors"
+                                      >
+                                        Выбросить
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           );
                         })}
@@ -3862,7 +4132,14 @@ export default function App() {
               )}
             </div>
 
-
+            <motion.button 
+              onClick={() => setPage(2)}
+              whileHover={{ scale: 1.02 }} 
+              whileTap={{ scale: 0.95 }} 
+              className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md py-2 rounded-2xl  bg-white/10 border border-white/20 hover:bg-white/20 transition-colors flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-sm"
+            >
+              <ArrowLeft className="w-5 h-5" /> Назад
+            </motion.button>
           </motion.div>
         )}
 
@@ -3949,205 +4226,162 @@ export default function App() {
         {page === 10 && (
           <motion.div
             key="page10"
-            className="min-h-[100dvh] flex flex-col p-4 pb-24 text-zinc-100 w-full max-w-md mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-8 mt-2">
+            <div className="flex items-center mb-8 relative mt-4">
               <button 
                 onClick={() => setPage(2)} 
-                className="p-2.5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 active:scale-95"
+                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
               >
-                <ChevronLeft className="w-6 h-6 text-zinc-400" />
+                <ChevronLeft className="w-6 h-6" />
               </button>
-              <div className="text-center">
-                <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white">Клан</h2>
-                <div className="h-1 w-12 bg-lime-400 mx-auto mt-1 rounded-full shadow-[0_0_10px_rgba(163,230,53,0.5)]" />
-              </div>
-              <div className="w-11" /> {/* Spacer for centering */}
+              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-lime-300">Мой клан</h2>
             </div>
 
-            <div className="flex-1 flex flex-col gap-4">
+            <div className="flex-1 flex flex-col gap-3">
               {clan ? (
-                <div className="flex flex-col h-full gap-4">
+                <div className="flex flex-col h-full">
                   {/* Clan Tabs */}
-                  <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5 backdrop-blur-sm">
+                  <div className="flex gap-2 mb-6">
                     <button 
                       onClick={() => setClanTab("info")}
-                      className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                        clanTab === "info" ? "bg-lime-400 text-lime-950 shadow-lg shadow-lime-400/20" : "text-zinc-500 hover:text-zinc-300"
+                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        clanTab === "info" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
                       }`}
                     >
-                      <Info className="w-3 h-3" />
                       Инфо
                     </button>
                     <button 
                       onClick={() => setClanTab("members")}
-                      className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                        clanTab === "members" ? "bg-lime-400 text-lime-950 shadow-lg shadow-lime-400/20" : "text-zinc-500 hover:text-zinc-300"
+                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        clanTab === "members" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
                       }`}
                     >
-                      <Users className="w-3 h-3" />
                       Участники
                     </button>
                     {(clan.leader === playerName) && (
                       <button 
                         onClick={() => setClanTab("manage")}
-                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                          clanTab === "manage" ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-zinc-500 hover:text-zinc-300"
+                        className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                          clanTab === "manage" ? "bg-red-500/20 border-red-500/50 text-red-400" : "bg-white/5 border-white/5 text-zinc-500"
                         }`}
                       >
-                        <Settings className="w-3 h-3" />
                         Управление
                       </button>
                     )}
                   </div>
 
                   {clanTab === "info" && (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="bg-white/5 border border-white/5 rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden group">
-                        {/* Background Decoration */}
-                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-lime-400/10 to-transparent opacity-50" />
-                        
-                        <div className="w-24 h-24 rounded-full bg-zinc-900 border-4 border-white/5 flex items-center justify-center mb-4 shadow-2xl relative z-10 group-hover:scale-105 transition-transform duration-500">
-                          {clan.avatarUrl ? (
-                            <img src={clan.avatarUrl} alt="Crest" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
-                          ) : (
-                            <Shield className="w-12 h-12 text-lime-400" />
-                          )}
-                          <div className="absolute -bottom-1 -right-1 bg-lime-400 text-lime-950 text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-zinc-900">
-                            LVL {clan.level}
-                          </div>
-                        </div>
-
-                        <h3 className="text-2xl font-black text-white mb-1 tracking-tight">{clan.name}</h3>
-                        
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${
-                            clan.leader === playerName ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                          }`}>
-                            {clan.leader === playerName ? <Crown className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                            {clan.leader === playerName ? "Лидер" : "Участник"}
-                          </div>
-                          {clan.settings?.isPrivate && (
-                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-500/30 text-zinc-400 bg-zinc-500/10 text-[10px] font-black uppercase tracking-widest">
-                              <Lock className="w-3 h-3" />
-                              Закрытый
-                            </div>
-                          )}
-                        </div>
-
-                        <p className="text-zinc-400 text-xs leading-relaxed max-w-[80%] mb-6 italic">
-                          "{clan.description || "У этого клана пока нет описания..."}"
-                        </p>
-                        
-                        <div className="w-full grid grid-cols-2 gap-3 mb-2">
-                          <div className="bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex flex-col items-center">
-                            <Users className="w-4 h-4 text-zinc-500 mb-1" />
-                            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-1">Состав</div>
-                            <div className="text-lg font-black text-white">{clan.members?.length || 0}<span className="text-zinc-600 text-xs font-medium ml-1">/ 50</span></div>
-                          </div>
-                          <div className="bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex flex-col items-center">
-                            <Trophy className="w-4 h-4 text-lime-400 mb-1" />
-                            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-1">Рейтинг</div>
-                            <div className="text-lg font-black text-white">#{Math.floor(Math.random() * 100) + 1}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-center gap-4 mt-2">
-                        {!showClanLeaveConfirm ? (
-                          <button 
-                            onClick={() => setShowClanLeaveConfirm(true)}
-                            className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-all text-[10px] font-black uppercase tracking-widest"
-                          >
-                            <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                            Покинуть клан
-                          </button>
+                    <div className="bg-white/5  border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="w-20 h-20 rounded-full bg-lime-900/20 border-2 border-lime-400/30 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.1)] overflow-hidden">
+                        {clan.avatarUrl ? (
+                          <img src={clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-full p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
-                            <div className="text-center">
-                              <p className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">Вы уверены?</p>
-                              <p className="text-red-500/60 text-[10px]">Вы потеряете все клановые бонусы</p>
-                            </div>
-                            <div className="flex gap-3 w-full">
-                              <button 
-                                onClick={async () => {
-                                  try {
-                                    const user = auth.currentUser;
-                                    const docId = user ? user.uid : playerName;
-                                    await setDoc(doc(db, "users", docId), { clanId: null }, { merge: true });
-                                    const updatedMembers = clan.members.filter((m: any) => (m.nickname || m) !== playerName);
-                                    await updateDoc(doc(db, "clans", clanId!), { members: updatedMembers });
-                                    setClanId(null);
-                                    setClan(null);
-                                    setShowClanLeaveConfirm(false);
-                                    toast.info("Вы покинули клан");
-                                  } catch (error) {
-                                    handleFirestoreError(error, OperationType.UPDATE, `clans/${clanId}`);
-                                  }
-                                }}
-                                className="flex-1 py-3 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-                              >
-                                Да, покинуть
-                              </button>
-                              <button 
-                                onClick={() => setShowClanLeaveConfirm(false)}
-                                className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700 transition-all"
-                              >
-                                Отмена
-                              </button>
-                            </div>
-                          </div>
+                          <Shield className="w-10 h-10 text-lime-300" />
                         )}
                       </div>
+                      <h3 className="text-xl font-bold text-white mb-1">{clan.name}</h3>
+                      <div className="flex items-center gap-2 mb-6">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${
+                          clan.leader === playerName ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-zinc-500/10 border-zinc-500/30 text-zinc-400"
+                        }`}>
+                          {clan.leader === playerName ? "Лидер" : "Участник"}
+                        </span>
+                        {clan.settings?.isPrivate && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 text-blue-400 uppercase tracking-widest">Закрытый</span>
+                        )}
+                      </div>
+                      
+                      <div className="w-full grid grid-cols-2 gap-2 mb-6">
+                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Участники</div>
+                          <div className="text-base font-bold text-white">{clan.members?.length || 0} / 50</div>
+                        </div>
+                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Уровень</div>
+                          <div className="text-base font-bold text-white">{clan.level}</div>
+                        </div>
+                      </div>
+
+                      {!showClanLeaveConfirm ? (
+                        <button 
+                          onClick={() => setShowClanLeaveConfirm(true)}
+                          className="text-red-400 text-xs font-bold uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-2"
+                        >
+                          <LogOut className="w-3 h-3" /> Покинуть клан
+                        </button>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <p className="text-red-400 text-xs font-bold">Вы уверены?</p>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={async () => {
+                                try {
+                                  const user = auth.currentUser;
+                                  const docId = user ? user.uid : playerName;
+                                  
+                                  // Update user
+                                  await setDoc(doc(db, "users", docId), { clanId: null }, { merge: true });
+                                  
+                                  // Update clan members
+                                  const updatedMembers = clan.members.filter((m: any) => (m.nickname || m) !== playerName);
+                                  await updateDoc(doc(db, "clans", clanId!), { members: updatedMembers });
+                                  
+                                  setClanId(null);
+                                  setClan(null);
+                                  setShowClanLeaveConfirm(false);
+                                  toast.info("Вы покинули клан");
+                                } catch (error) {
+                                  handleFirestoreError(error, OperationType.UPDATE, `clans/${clanId}`);
+                                }
+                              }}
+                              className="px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-all"
+                            >
+                              Да, покинуть
+                            </button>
+                            <button 
+                              onClick={() => setShowClanLeaveConfirm(false)}
+                              className="px-3 py-2 bg-zinc-900/80 border border-white/5 rounded-lg text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all"
+                            >
+                              Отмена
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {clanTab === "members" && (
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300 custom-scrollbar">
-                      <div className="flex items-center justify-between px-2 mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Участник</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Действия</span>
-                      </div>
+                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                       {clan.members?.map((member: any, idx: number) => {
                         const mNickname = member.nickname || member;
                         const mRole = member.role || (mNickname === clan.leader ? "leader" : "member");
                         const isMeLeader = clan.leader === playerName;
-                        const isMe = mNickname === playerName;
                         
                         return (
-                          <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:bg-white/10 transition-all">
+                          <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="relative">
-                                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 font-black text-sm border border-white/10 overflow-hidden">
-                                  {member.avatarUrl ? (
-                                    <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    mNickname[0].toUpperCase()
-                                  )}
-                                </div>
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-900 shadow-sm" />
+                              <div className="w-8 h-8 rounded-full bg-zinc-900/80 flex items-center justify-center text-zinc-400 font-bold text-xs border border-white/5">
+                                {mNickname[0]}
                               </div>
                               <div className="flex flex-col">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`font-bold text-sm ${isMe ? 'text-lime-400' : 'text-zinc-200'}`}>{mNickname}</span>
-                                  {mRole === 'leader' && <Crown className="w-3 h-3 text-red-400" />}
-                                </div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                  mRole === 'leader' ? 'text-red-400' : mRole === 'officer' ? 'text-lime-400' : 'text-zinc-500'
+                                <span className="font-bold text-zinc-200">{mNickname}</span>
+                                <span className={`text-[9px] uppercase tracking-widest ${
+                                  mRole === 'leader' ? 'text-red-400' : mRole === 'officer' ? 'text-lime-300' : 'text-zinc-500'
                                 }`}>
                                   {mRole === 'leader' ? "Лидер" : mRole === 'officer' ? "Офицер" : "Участник"}
                                 </span>
                               </div>
                             </div>
-                            
                             <div className="flex items-center gap-2">
-                              {isMeLeader && !isMe && (
-                                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {mRole === 'leader' && <Crown className="w-4 h-4 text-red-400" />}
+                              {isMeLeader && mNickname !== playerName && (
+                                <div className="flex gap-1">
                                   {mRole === 'member' && (
                                     <button 
                                       onClick={async () => {
@@ -4157,10 +4391,10 @@ export default function App() {
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
                                         toast.success(`${mNickname} назначен офицером`);
                                       }}
-                                      className="p-2 bg-lime-400/10 border border-lime-400/20 rounded-xl text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
-                                      title="Повысить"
+                                      className="p-1.5 bg-lime-400/10 border border-lime-400/20 rounded text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
+                                      title="Повысить до офицера"
                                     >
-                                      <TrendingUp className="w-3.5 h-3.5" />
+                                      <TrendingUp className="w-3 h-3" />
                                     </button>
                                   )}
                                   {mRole === 'officer' && (
@@ -4170,12 +4404,12 @@ export default function App() {
                                           (m.nickname || m) === mNickname ? { ...m, role: 'member' } : m
                                         );
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
-                                        toast.info(`${mNickname} разжалован`);
+                                        toast.info(`${mNickname} разжалован до участника`);
                                       }}
-                                      className="p-2 bg-zinc-800 border border-white/5 rounded-xl text-zinc-400 hover:bg-zinc-700 transition-all"
+                                      className="p-1.5 bg-zinc-900/80 border border-white/5 rounded text-zinc-400 hover:bg-zinc-700 transition-all"
                                       title="Разжаловать"
                                     >
-                                      <TrendingDown className="w-3.5 h-3.5" />
+                                      <Minus className="w-3 h-3" />
                                     </button>
                                   )}
                                   <button 
@@ -4183,22 +4417,21 @@ export default function App() {
                                       if (confirm(`Вы уверены, что хотите исключить ${mNickname}?`)) {
                                         const newMembers = clan.members.filter((m: any) => (m.nickname || m) !== mNickname);
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
+                                        // Also need to update the user's clanId in their doc
                                         const targetUid = member.uid;
                                         if (targetUid) {
                                           await updateDoc(doc(db, "users", targetUid), { clanId: null });
                                         }
-                                        toast.error(`${mNickname} исключен`);
+                                        toast.error(`${mNickname} исключен из клана`);
                                       }
                                     }}
-                                    className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                    className="p-1.5 bg-red-500/10 border border-red-500/20 rounded text-red-500 hover:bg-red-500 hover:text-red-950 transition-all"
                                     title="Исключить"
                                   >
-                                    <UserMinus className="w-3.5 h-3.5" />
+                                    <X className="w-3 h-3" />
                                   </button>
                                 </div>
                               )}
-                              {mRole === 'leader' && !isMeLeader && <Crown className="w-4 h-4 text-red-400/50" />}
-                              {isMe && <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.5)]" />}
                             </div>
                           </div>
                         );
@@ -4207,122 +4440,105 @@ export default function App() {
                   )}
 
                   {clanTab === "manage" && (
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-300 custom-scrollbar">
-                      {/* Visuals Section */}
-                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="p-1.5 bg-lime-400/10 rounded-lg">
-                            <Palette className="w-4 h-4 text-lime-400" />
-                          </div>
-                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-black">Внешний вид</h4>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
+                          <Shield className="w-3 h-3" /> Герб клана
+                        </h4>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center overflow-hidden">
                             {clanAvatarUrl || clan.avatarUrl ? (
                               <img src={clanAvatarUrl || clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <Shield className="w-10 h-10 text-zinc-800" />
+                              <Shield className="w-8 h-8 text-zinc-600" />
                             )}
                           </div>
-                          <div className="flex-1 space-y-3">
-                            <div className="space-y-1">
-                              <p className="text-[10px] text-zinc-500 font-bold uppercase ml-1">URL герба</p>
-                              <input 
-                                type="text" 
-                                placeholder="https://..."
-                                value={clanAvatarUrl}
-                                onChange={(e) => setClanAvatarUrl(e.target.value)}
-                                className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-lime-400/50 transition-all placeholder:text-zinc-700"
-                              />
-                            </div>
+                          <div className="flex-1 space-y-2">
+                            <input 
+                              type="text" 
+                              placeholder="URL герба..."
+                              value={clanAvatarUrl}
+                              onChange={(e) => setClanAvatarUrl(e.target.value)}
+                              className="w-full bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-lime-400/50 transition-colors"
+                            />
                             <button 
                               onClick={async () => {
                                 await updateDoc(doc(db, "clans", clanId!), { avatarUrl: clanAvatarUrl });
-                                toast.success("Герб успешно обновлен");
+                                toast.success("Герб обновлен");
                               }}
-                              className="w-full py-2.5 bg-lime-400 text-lime-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-lime-300 transition-all shadow-lg shadow-lime-400/10"
+                              className="w-full py-1.5 bg-lime-400/20 border border-lime-400/50 rounded-lg text-lime-300 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400/30 transition-all"
                             >
-                              Обновить герб
+                              Сохранить герб
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      {/* Recruitment Section */}
-                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="p-1.5 bg-blue-400/10 rounded-lg">
-                            <UserPlus className="w-4 h-4 text-blue-400" />
-                          </div>
-                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-black">Набор в клан</h4>
-                        </div>
-
+                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
+                          <Settings className="w-3 h-3" /> Настройки вступления
+                        </h4>
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs font-black text-zinc-200 uppercase tracking-wide">Минимальный уровень</p>
-                              <p className="text-[9px] text-zinc-500 uppercase font-bold">Порог вступления</p>
+                              <p className="text-xs font-bold text-zinc-200">Минимальный уровень</p>
+                              <p className="text-[10px] text-zinc-500">Порог для вступления</p>
                             </div>
-                            <div className="flex items-center gap-3 bg-zinc-900 rounded-xl p-1 border border-white/5">
-                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">-</button>
-                              <span className="text-sm font-black text-lime-400 w-6 text-center">{clanMinLevel}</span>
-                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors">+</button>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">-</button>
+                              <span className="text-sm font-bold text-lime-300 w-6 text-center">{clanMinLevel}</span>
+                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">+</button>
                             </div>
                           </div>
-
-                          <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs font-black text-zinc-200 uppercase tracking-wide">Тип клана</p>
-                              <p className="text-[9px] text-zinc-500 uppercase font-bold">{isClanPrivate ? "Только по приглашению" : "Свободный вход"}</p>
+                              <p className="text-xs font-bold text-zinc-200">Закрытый клан</p>
+                              <p className="text-[10px] text-zinc-500">Только по приглашению</p>
                             </div>
                             <button 
                               onClick={() => setIsClanPrivate(!isClanPrivate)}
-                              className={`w-12 h-6 rounded-full relative transition-all duration-300 ${isClanPrivate ? 'bg-blue-500' : 'bg-zinc-800'}`}
+                              className={`w-10 h-5 rounded-full relative transition-colors ${isClanPrivate ? 'bg-lime-400' : 'bg-zinc-900/80'}`}
                             >
-                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm ${isClanPrivate ? 'left-7' : 'left-1'}`} />
+                              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isClanPrivate ? 'left-6' : 'left-1'}`} />
                             </button>
                           </div>
-
                           <button 
                             onClick={async () => {
                               await updateDoc(doc(db, "clans", clanId!), { 
                                 settings: { minLevel: clanMinLevel, isPrivate: isClanPrivate } 
                               });
-                              toast.success("Настройки набора сохранены");
+                              toast.success("Настройки сохранены");
                             }}
-                            className="w-full py-3 bg-white/5 border border-white/10 text-zinc-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                            className="w-full py-2 bg-lime-400 text-lime-950 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-lime-300 transition-all"
                           >
-                            Сохранить настройки
+                            Применить настройки
                           </button>
                         </div>
                       </div>
 
-                      {/* Danger Zone */}
-                      <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="p-1.5 bg-red-500/10 rounded-lg">
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
-                          </div>
-                          <h4 className="text-[10px] uppercase tracking-[0.2em] text-red-500/70 font-black">Опасная зона</h4>
-                        </div>
-                        <p className="text-[10px] text-zinc-600 mb-4 font-medium leading-relaxed">Расформирование клана удалит все данные, достижения и распустит всех участников без возможности восстановления.</p>
+                      <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-4">
+                        <h4 className="text-[10px] uppercase tracking-widest text-red-400 font-bold mb-2 flex items-center gap-2">
+                          <Ban className="w-3 h-3" /> Опасная зона
+                        </h4>
+                        <p className="text-[10px] text-zinc-500 mb-4">Расформирование клана удалит все данные без возможности восстановления.</p>
                         <button 
                           onClick={async () => {
-                            if (confirm("ВНИМАНИЕ! Клан будет удален навсегда! Вы уверены?")) {
+                            if (confirm("ВЫ УВЕРЕНЫ? Клан будет удален навсегда!")) {
+                              // 1. Remove clanId from all members
                               for (const member of clan.members) {
                                 const mUid = member.uid;
                                 if (mUid) {
                                   await updateDoc(doc(db, "users", mUid), { clanId: null });
                                 }
                               }
+                              // 2. Delete clan doc
                               await deleteDoc(doc(db, "clans", clanId!));
                               setClanId(null);
                               setClan(null);
-                              toast.error("Клан был расформирован");
+                              toast.error("Клан расформирован");
                             }
                           }}
-                          className="w-full py-3 border border-red-500/30 rounded-xl text-red-500/60 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                          className="w-full py-2 border border-red-500/50 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
                         >
                           Расформировать клан
                         </button>
@@ -4331,79 +4547,30 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-4 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {!isCreatingClan && !isJoiningClan ? (
-                    <div className="flex flex-col gap-6">
-                      <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-lime-400/5 via-transparent to-purple-500/5" />
-                        <div className="w-24 h-24 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative z-10">
-                          <Users className="w-10 h-10 text-zinc-600" />
-                          <div className="absolute inset-0 rounded-full border-2 border-dashed border-zinc-800 animate-[spin_10s_linear_infinite]" />
-                        </div>
-                        <h3 className="text-2xl font-black text-white mb-3 tracking-tight relative z-10">Путь одиночки?</h3>
-                        <p className="text-zinc-400 text-sm leading-relaxed mb-8 relative z-10">
-                          Вступайте в клан, чтобы объединить силы с другими игроками, участвовать в масштабных битвах и получать уникальные бонусы!
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-3 w-full relative z-10">
-                          <button 
-                            onClick={() => setIsJoiningClan(true)}
-                            className="flex flex-col items-center justify-center gap-3 p-5 bg-white/5 border border-white/5 rounded-3xl hover:bg-white/10 hover:border-white/20 transition-all group"
-                          >
-                            <div className="p-3 bg-zinc-900 rounded-2xl group-hover:scale-110 transition-transform">
-                              <Search className="w-5 h-5 text-zinc-400 group-hover:text-white" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Найти клан</span>
-                          </button>
-                          <button 
-                            onClick={() => setIsCreatingClan(true)}
-                            className="flex flex-col items-center justify-center gap-3 p-5 bg-lime-400/5 border border-lime-400/10 rounded-3xl hover:bg-lime-400/10 hover:border-lime-400/20 transition-all group"
-                          >
-                            <div className="p-3 bg-lime-400/20 rounded-2xl group-hover:scale-110 transition-transform">
-                              <Plus className="w-5 h-5 text-lime-400" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-lime-400">Создать свой</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="p-5 bg-black/40 border border-white/5 rounded-3xl">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="p-2 bg-amber-400/10 rounded-xl">
-                            <Trophy className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Преимущества клана</h4>
-                        </div>
-                        <ul className="space-y-3">
-                          {[
-                            { icon: <Zap className="w-3 h-3" />, text: "+10% к получаемому опыту" },
-                            { icon: <Coins className="w-3 h-3" />, text: "Доступ к клановой казне" },
-                            { icon: <Swords className="w-3 h-3" />, text: "Участие в битвах за территории" }
-                          ].map((item, i) => (
-                            <li key={i} className="flex items-center gap-3 text-xs text-zinc-500 font-medium">
-                              <div className="text-amber-400/60">{item.icon}</div>
-                              {item.text}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center mb-4">
+                      <Users className="w-8 h-8 text-zinc-500" />
                     </div>
-                  ) : isCreatingClan ? (
-                    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] p-6 flex flex-col gap-6 animate-in zoom-in-95 duration-300">
-                      <div className="text-center">
-                        <h4 className="text-xl font-black text-white mb-1">Создание клана</h4>
-                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Основание новой династии</p>
-                      </div>
+                    <h3 className="text-lg font-bold text-white mb-2">Вы не состоите в клане</h3>
+                    <p className="text-zinc-400 text-sm">Вступайте в клан, чтобы участвовать в битвах и получать бонусы!</p>
+                  </div>
 
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-black ml-1">Название вашего клана</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {isCreatingClan ? (
+                      // ... (existing creation UI)
+                      <div className="bg-white/5  border border-white/5 rounded-2xl p-3 flex flex-col gap-2">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Название клана</label>
                           <input 
                             type="text"
                             value={newClanNameInput}
                             onChange={(e) => {
                               const val = e.target.value;
-                              if (val === "") { setNewClanNameInput(val); return; }
+                              if (val === "") {
+                                setNewClanNameInput(val);
+                                return;
+                              }
                               if (val.length > 20) return;
                               if ((val.match(/ /g) || []).length > 5) return;
                               if (!/^[A-Za-zА-Яа-яЁё\s]+$/.test(val)) return;
@@ -4412,172 +4579,188 @@ export default function App() {
                               if (hasEnglish && hasRussian) return;
                               setNewClanNameInput(val);
                             }}
-                            placeholder="Напр: Легион Света"
-                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-lime-400/50 transition-all placeholder:text-zinc-700 font-bold"
+                            placeholder="Введите название..."
+                            className="bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white focus:outline-none focus:border-lime-400/50 transition-colors"
                           />
                           {newClanNameInput.length > 0 && newClanNameInput.replace(/ /g, '').length < 5 && (
-                            <p className="text-red-400 text-[10px] font-bold ml-1">Минимум 5 символов</p>
+                            <p className="text-red-400 text-[10px]">Минимум 5 букв</p>
                           )}
                           {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) && (
-                            <p className="text-lime-400 text-[10px] font-bold ml-1">Такой клан уже существует. Вы можете вступить в него!</p>
+                            <p className="text-lime-300 text-[10px]">Клан с таким названием уже существует. Вы можете вступить в него бесплатно через поиск.</p>
                           )}
                         </div>
-
-                        <div className="p-4 bg-lime-400/5 border border-lime-400/10 rounded-2xl flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-lime-400/20 rounded-lg">
-                              <Coins className="w-4 h-4 text-lime-400" />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest">Стоимость</p>
-                              <p className="text-sm font-black text-white">1000 Серебра</p>
-                            </div>
-                          </div>
-                          <div className={`text-[10px] font-black px-3 py-1 rounded-full ${silver >= 1000 ? 'bg-lime-400/20 text-lime-400' : 'bg-red-500/20 text-red-400'}`}>
-                            {silver >= 1000 ? 'Доступно' : 'Недостаточно'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-3">
-                        <button 
-                          onClick={async () => {
-                            const name = newClanNameInput.trim();
-                            if (name.replace(/ /g, '').length >= 5) {
-                              if (existingClans.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-                                setIsCreatingClan(false);
-                                setIsJoiningClan(true);
-                                setClanSearchQuery(name);
-                                return;
-                              }
-                              if (silver >= 1000) {
-                                try {
-                                  const user = auth.currentUser;
-                                  const docId = user ? user.uid : playerName;
-                                  await setDoc(doc(db, "clans", name), {
-                                    name,
-                                    level: 1,
-                                    members: [{ uid: docId, nickname: playerName, role: 'leader' }],
-                                    leader: playerName,
-                                    description: "Новый клан",
-                                    avatarUrl: "",
-                                    settings: { minLevel: 1, isPrivate: false }
-                                  });
-                                  await setDoc(doc(db, "users", docId), { clanId: name, silver: silver - 1000 }, { merge: true });
-                                  setSilver(prev => prev - 1000);
-                                  setClanId(name);
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={async () => {
+                              const name = newClanNameInput.trim();
+                              if (name.replace(/ /g, '').length >= 5) {
+                                if (existingClans.some(c => c.name.toLowerCase() === name.toLowerCase())) {
                                   setIsCreatingClan(false);
-                                  setNewClanNameInput("");
-                                  toast.success(`Клан ${name} успешно основан!`);
-                                } catch (error) {
-                                  handleFirestoreError(error, OperationType.WRITE, `clans/${name}`);
+                                  setIsJoiningClan(true);
+                                  setClanSearchQuery(name);
+                                  return;
+                                }
+                                if (silver >= 1000) {
+                                  try {
+                                    const user = auth.currentUser;
+                                    const docId = user ? user.uid : playerName;
+                                    
+                                    // Create clan document
+                                    await setDoc(doc(db, "clans", name), {
+                                      name,
+                                      level: 1,
+                                      members: [{ uid: docId, nickname: playerName, role: 'leader' }],
+                                      leader: playerName,
+                                      description: "Новый клан",
+                                      avatarUrl: "",
+                                      settings: {
+                                        minLevel: 1,
+                                        isPrivate: false
+                                      }
+                                    });
+                                    
+                                    // Update user
+                                    await setDoc(doc(db, "users", docId), { 
+                                      clanId: name,
+                                      silver: silver - 1000 
+                                    }, { merge: true });
+                                    
+                                    setSilver(prev => prev - 1000);
+                                    setClanId(name);
+                                    setIsCreatingClan(false);
+                                    setNewClanNameInput("");
+                                    toast.success(`Клан ${name} создан!`);
+                                  } catch (error) {
+                                    handleFirestoreError(error, OperationType.WRITE, `clans/${name}`);
+                                  }
                                 }
                               }
-                            }
-                          }}
-                          disabled={(silver < 1000 && !existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) || newClanNameInput.replace(/ /g, '').length < 5}
-                          className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${
-                            (silver >= 1000 || existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) && newClanNameInput.replace(/ /g, '').length >= 5
-                              ? "bg-lime-400 text-lime-950 hover:bg-lime-300 shadow-lime-400/20"
-                              : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                          }`}
-                        >
-                          {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) ? "Перейти к поиску" : "Основать клан"}
-                        </button>
-                        <button 
-                          onClick={() => { setIsCreatingClan(false); setNewClanNameInput(""); }}
-                          className="w-full py-4 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-zinc-300 transition-all"
-                        >
-                          Вернуться назад
-                        </button>
-                      </div>
-                    </div>
-                  ) : isJoiningClan ? (
-                    <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 duration-300 h-full overflow-hidden">
-                      <div className="bg-white/5 border border-white/5 rounded-3xl p-5 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Поиск соратников</h4>
-                          <button onClick={() => { setIsJoiningClan(false); setClanSearchQuery(""); }} className="text-[10px] font-black text-zinc-500 hover:text-zinc-300 uppercase tracking-widest">Отмена</button>
+                            }}
+                            disabled={(silver < 1000 && !existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) || newClanNameInput.replace(/ /g, '').length < 5}
+                            className={`flex-1 py-2 rounded-2xl font-bold uppercase tracking-widest text-xs transition-all ${
+                              (silver >= 1000 || existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase())) && newClanNameInput.replace(/ /g, '').length >= 5
+                                ? "bg-lime-400 text-lime-950 hover:bg-lime-300"
+                                : "bg-zinc-900/80 text-zinc-600 cursor-not-allowed"
+                            }`}
+                          >
+                            {existingClans.some(c => c.name.toLowerCase() === newClanNameInput.trim().toLowerCase()) ? "Найти клан" : "Создать (1000 С)"}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setIsCreatingClan(false);
+                              setNewClanNameInput("");
+                            }}
+                            className="px-3 py-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                          >
+                            Отмена
+                          </button>
                         </div>
-                        <div className="relative">
-                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                        {silver < 1000 && (
+                          <p className="text-red-400 text-[10px] text-center">Недостаточно серебра</p>
+                        )}
+                      </div>
+                    ) : isJoiningClan ? (
+                      <div className="bg-white/5  border border-white/5 rounded-2xl p-3 flex flex-col gap-2">
+                        <div className="flex flex-col gap-2">
+                          <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Поиск клана</h4>
                           <input 
                             type="text"
                             value={clanSearchQuery}
                             onChange={(e) => setClanSearchQuery(e.target.value)}
                             placeholder="Название клана..."
-                            className="w-full bg-black/40 border border-white/5 rounded-2xl pl-11 pr-4 py-3.5 text-white text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-zinc-700 font-bold"
+                            className="bg-black/40 border border-white/5 rounded-2xl px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500/50 transition-colors"
                           />
                         </div>
-                      </div>
-
-                      <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
-                        {existingClans
-                          .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
-                          .length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center">
-                              <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4 border border-white/5">
-                                <SearchX className="w-8 h-8 text-zinc-700" />
-                              </div>
-                              <p className="text-zinc-500 text-xs font-bold">Кланы не найдены</p>
-                              <p className="text-zinc-600 text-[10px] mt-1 uppercase tracking-widest">Попробуйте другое название</p>
-                            </div>
-                          ) : (
-                            existingClans
-                              .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
-                              .map((clanItem, idx) => (
-                              <button
-                                key={idx}
-                                onClick={async () => {
-                                  try {
-                                    const user = auth.currentUser;
-                                    const docId = user ? user.uid : playerName;
-                                    await setDoc(doc(db, "users", docId), { clanId: clanItem.name }, { merge: true });
-                                    const clanDoc = await getDoc(doc(db, "clans", clanItem.name));
-                                    if (clanDoc.exists()) {
-                                      const currentMembers = clanDoc.data().members || [];
-                                      const isAlreadyMember = currentMembers.some((m: any) => m.uid === docId || m.nickname === playerName);
-                                      if (!isAlreadyMember) {
-                                        await updateDoc(doc(db, "clans", clanItem.name), { 
-                                          members: [...currentMembers, { uid: docId, nickname: playerName, role: 'member' }] 
-                                        });
-                                      }
+                        <div className="max-h-60 overflow-y-auto pr-2 flex flex-col gap-2 scrollbar-thin scrollbar-thumb-white/10">
+                          {existingClans
+                            .filter(c => c.name.toLowerCase().includes(clanSearchQuery.toLowerCase()))
+                            .map((clanItem, idx) => (
+                            <button
+                              key={idx}
+                              onClick={async () => {
+                                try {
+                                  const user = auth.currentUser;
+                                  const docId = user ? user.uid : playerName;
+                                  
+                                  // Update user
+                                  await setDoc(doc(db, "users", docId), { clanId: clanItem.name }, { merge: true });
+                                  
+                                  // Update clan members
+                                  const clanDoc = await getDoc(doc(db, "clans", clanItem.name));
+                                  if (clanDoc.exists()) {
+                                    const currentMembers = clanDoc.data().members || [];
+                                    const isAlreadyMember = currentMembers.some((m: any) => m.uid === docId || m.nickname === playerName);
+                                    if (!isAlreadyMember) {
+                                      await updateDoc(doc(db, "clans", clanItem.name), { 
+                                        members: [...currentMembers, { uid: docId, nickname: playerName, role: 'member' }] 
+                                      });
                                     }
-                                    setClanId(clanItem.name);
-                                    setIsJoiningClan(false);
-                                    setClanSearchQuery("");
-                                    toast.success(`Вы вступили в клан ${clanItem.name}`);
-                                  } catch (error) {
-                                    handleFirestoreError(error, OperationType.UPDATE, `clans/${clanItem.name}`);
                                   }
-                                }}
-                                className="w-full p-4 bg-white/5 border border-white/5 rounded-[1.5rem] text-left hover:bg-white/10 hover:border-blue-500/30 transition-all group flex items-center justify-between"
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Shield className="w-6 h-6 text-zinc-700 group-hover:text-blue-400 transition-colors" />
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{clanItem.name}</span>
-                                    <div className="flex items-center gap-3 mt-1">
-                                      <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-1">
-                                        <Users className="w-2.5 h-2.5" /> {clanItem.members} / 50
-                                      </span>
-                                      <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-1">
-                                        <Zap className="w-2.5 h-2.5" /> LVL {Math.floor(Math.random() * 10) + 1}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
-                                  <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-all group-hover:translate-x-0.5" />
-                                </div>
-                              </button>
-                            ))
-                          )}
+
+                                  setClanId(clanItem.name);
+                                  setIsJoiningClan(false);
+                                  setClanSearchQuery("");
+                                  toast.success(`Вы вступили в клан ${clanItem.name}`);
+                                } catch (error) {
+                                  handleFirestoreError(error, OperationType.UPDATE, `clans/${clanItem.name}`);
+                                }
+                              }}
+                              className="w-full p-4 bg-white/5 border border-white/5 rounded-2xl text-left hover:bg-white/10 hover:border-green-500/30 transition-all group flex items-center justify-between"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-bold text-white group-hover:text-green-400 transition-colors">{clanItem.name}</span>
+                                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                  <Users className="w-2 h-2" /> {clanItem.members} участников
+                                </span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-green-400 transition-all group-hover:translate-x-1" />
+                            </button>
+                          ))}
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setIsJoiningClan(false);
+                            setClanSearchQuery("");
+                          }}
+                          className="w-full py-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                        >
+                          Отмена
+                        </button>
                       </div>
-                    </div>
-                  ) : null}
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Ваш клан</h4>
+                          <span className="text-[10px] text-zinc-600 font-mono">ID: {Math.floor(1000 + Math.random() * 9000)}</span>
+                        </div>
+                        
+                        <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5">
+                            <Shield className="w-6 h-6 text-zinc-500" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-zinc-500 text-xs italic">Вы не состоите в клане</p>
+                            <p className="text-[10px] text-zinc-600 mt-1">Вступайте в кланы для совместных рейдов</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button 
+                            onClick={() => setIsJoiningClan(true)}
+                            className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/5 rounded-2xl text-zinc-300 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all"
+                          >
+                            <Search className="w-3 h-3" /> Найти
+                          </button>
+                          <button 
+                            onClick={() => setIsCreatingClan(true)}
+                            className="flex items-center justify-center gap-2 py-3 bg-lime-400/10 border border-lime-400/20 rounded-2xl text-lime-400 text-xs font-bold uppercase tracking-widest hover:bg-lime-400/20 transition-all"
+                          >
+                            <Plus className="w-3 h-3" /> Создать
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -5085,104 +5268,98 @@ export default function App() {
         {page === 19 && (
           <motion.div
             key="page19"
-            className="min-h-[100dvh] flex flex-col bg-transparent text-zinc-100 w-full max-w-md mx-auto absolute inset-0 z-50"
+            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
           >
-            {/* Header */}
-            <div className="bg-zinc-900/80 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b border-white/5 z-10">
-              <button onClick={() => setPage(2)} className="p-2 -ml-2 text-zinc-400 hover:text-zinc-200 transition-colors">
-                <ChevronRight className="w-6 h-6 rotate-180" />
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white tracking-tight">💬 Общий чат</h2>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Голос мира</p>
+              </div>
+              <button onClick={() => setPage(2)} className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                <ChevronRight className="w-5 h-5 rotate-180" />
               </button>
-              <div className="text-center">
-                <h2 className="text-base font-bold text-zinc-100">Общий чат</h2>
-                <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">Голос мира</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-white/10">
-                <img src={avatarUrl || "https://via.placeholder.com/32"} alt="Avatar" className="w-full h-full object-cover" />
-              </div>
             </div>
 
-            {/* Online Users List (Optional, styled to fit) */}
-            <div className="bg-white/5 px-4 py-2 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">В сети: {onlineUsers.size}</span>
-              </div>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
-              <div className="text-center my-2">
-                <span className="text-[10px] font-medium text-zinc-500 bg-white/5 px-3 py-1 rounded-full">Сегодня</span>
-              </div>
-              
-              {chatMessages.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
-                  Сообщений пока нет...
-                </div>
-              ) : (
-                chatMessages.map((msg) => {
-                  const isMe = msg.sender === playerName;
-                  
-                  return (
-                    <div key={msg.id} className={`flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      {!isMe && (
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex-shrink-0 overflow-hidden mt-auto">
-                          <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        </div>
-                      )}
-                      
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                        {!isMe && (
-                          <div className="flex items-center gap-1 mb-1 ml-1">
-                            <span className={`text-[10px] font-bold ${msg.isCreator ? 'text-amber-500' : msg.isAdmin ? 'text-red-500' : 'text-zinc-500'}`}>
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 bg-black/40 rounded-3xl border border-white/5 mb-4 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+                {chatMessages.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
+                    Сообщений пока нет...
+                  </div>
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="flex gap-3 group cursor-pointer" onClick={() => {
+                      // If we have a way to get UID from sender name, we could view profile
+                      // For now, just a visual hint
+                    }}>
+                      <div className="w-8 h-8 rounded-lg bg-zinc-900/80 flex-shrink-0 overflow-hidden border border-white/5">
+                        <img src={msg.avatarUrl || "https://via.placeholder.com/32"} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${msg.isCreator ? 'text-amber-400' : msg.isAdmin ? 'text-red-400' : 'text-lime-300'}`}>
                               {msg.sender}
                             </span>
-                            {msg.isCreator && <ShieldCheck className="w-3 h-3 text-amber-500" />}
-                            {msg.isAdmin && !msg.isCreator && <Crown className="w-3 h-3 text-red-500" />}
+                            {msg.isCreator && <ShieldCheck className="w-2.5 h-2.5 text-amber-400" />}
+                            {msg.isAdmin && !msg.isCreator && <Crown className="w-2.5 h-2.5 text-red-400" />}
                           </div>
-                        )}
-                        
-                        <div className={`p-3 relative ${
-                          isMe 
-                            ? 'bg-zinc-800/80 border border-white/5 text-zinc-100 rounded-2xl rounded-br-sm shadow-sm' 
-                            : 'bg-pink-500/20 border border-pink-500/20 text-pink-100 rounded-2xl rounded-tl-sm'
-                        }`}>
-                          <p className="text-sm leading-relaxed">{msg.text}</p>
+                          <span className="text-[8px] text-zinc-600">{msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
                         </div>
-                        
-                        <span className="text-[9px] text-zinc-500 mt-1 mx-1">
-                          {msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
-                        </span>
+                        <p className="text-xs text-zinc-300 leading-relaxed">{msg.text}</p>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  ))
+                )}
+              </div>
+
+              {/* Online Users List */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Сейчас в сети ({onlineUsers.size})</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
+                  {(Array.from(onlineUsers) as string[]).map(uid => {
+                    // We don't have a map of UID to names here easily without fetching
+                    // But we can show a placeholder or just the count for now
+                    // Or better, let's just show the count and maybe a few names if we can
+                    return null;
+                  })}
+                  <div className="flex -space-x-2 overflow-hidden">
+                    {(Array.from(onlineUsers) as string[]).slice(0, 5).map((uid, i) => (
+                      <div key={uid} className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500">
+                        {i + 1}
+                      </div>
+                    ))}
+                    {onlineUsers.size > 5 && (
+                      <div className="inline-block h-6 w-6 rounded-full ring-2 ring-black bg-zinc-900 flex items-center justify-center text-[8px] font-bold text-zinc-400">
+                        +{onlineUsers.size - 5}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Input Area */}
-            <div className="bg-zinc-900/80 backdrop-blur-md p-4 pb-8 border-t border-white/5 z-10">
-              <div className="flex gap-2 items-center">
-                <div className="flex-1 bg-white/5 rounded-full px-4 py-3 flex items-center">
-                  <input 
-                    type="text" 
-                    placeholder="Написать сообщение..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-                    className="bg-transparent border-none outline-none w-full text-sm text-zinc-100 placeholder:text-zinc-500"
-                  />
-                </div>
-                <button 
-                  onClick={sendChatMessage}
-                  className="w-11 h-11 rounded-full bg-pink-500 flex items-center justify-center text-white hover:bg-pink-600 transition-colors shadow-md shadow-pink-500/20 shrink-0"
-                >
-                  <Send className="w-5 h-5 ml-0.5" />
-                </button>
-              </div>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Написать сообщение..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                className="flex-1 bg-black/40 border border-white/5 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-green-500/50 transition-colors"
+              />
+              <button 
+                onClick={sendChatMessage}
+                className="p-3 bg-green-500 rounded-2xl text-green-950 hover:bg-green-400 transition-colors"
+              >
+                <Send className="w-5 h-5" />
+              </button>
             </div>
           </motion.div>
         )}
@@ -5412,8 +5589,6 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
-
 
       {/* Edit Profile Modal */}
       <AnimatePresence>
