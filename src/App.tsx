@@ -738,13 +738,6 @@ export default function App() {
     return defaultPage;
   });
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isModerator, setIsModerator] = useState(false);
-  const [isEditor, setIsEditor] = useState(false);
-  const [isVip, setIsVip] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isBanned, setIsBanned] = useState(false);
   const [userRole, setUserRole] = useState("user");
 
   useEffect(() => {
