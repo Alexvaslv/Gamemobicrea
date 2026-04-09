@@ -3178,11 +3178,11 @@ export default function App() {
                 <motion.div 
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-rose-600 to-rose-400"
                   initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(0, Math.min(100, (playerHealth / maxHealth) * 100))}%` }}
+                  animate={{ width: `${Math.max(0, Math.min(100, (playerHealth / maxPlayerHealth) * 100))}%` }}
                   transition={{ duration: 0.5 }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black tracking-widest text-white drop-shadow-md">
-                  {playerHealth} / {maxHealth} ЗДОРОВЬЕ
+                  {playerHealth} / {maxPlayerHealth} ЗДОРОВЬЕ
                 </div>
               </div>
               

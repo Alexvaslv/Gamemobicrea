@@ -20,16 +20,17 @@
   }
   .character {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-columns: 80px 200px 80px;
     grid-template-rows: repeat(3, auto);
-    gap: 1rem;
+    justify-content: space-between;
     align-items: center;
   }
   .character .avatar {
     grid-column: 2;
     grid-row: 1 / span 3;
-    aspect-ratio: 3/4;
-    width: 100%;
+    width: 200px;
+    height: 450px;
+    justify-self: center;
   }
 }
 
