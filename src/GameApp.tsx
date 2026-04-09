@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Mars, Venus, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
+import { User, Swords, Users, Trophy, ShoppingBag, Gavel, Shield, ChevronLeft, ChevronRight, CheckCircle2, ScrollText, Backpack, Mail, Settings, ArrowLeft, PawPrint, Wind, Coins, Gem, Hexagon, Circle, Star, Lock, Mountain, TreePine, Heart, Crown, BookOpen, FlaskConical, PlusCircle, Shuffle, Flag, Ban, Snowflake, MicOff, LifeBuoy, Package, Check, ExternalLink, Minus, RotateCcw, MapPin, CalendarDays, Pencil, Eye, EyeOff, LogOut, Trash2, Zap, Target, TrendingUp, MessageSquare, Bell, X, Search, Plus, Newspaper, MessageCircle, Send, ShieldCheck, Radio, ShieldAlert } from "lucide-react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, getDocFromServer, onSnapshot, limit, deleteDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { Toaster, toast } from "sonner";
@@ -671,6 +671,42 @@ export default function App() {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [isIndicatorsExpanded, setIsIndicatorsExpanded] = useState(false);
   const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
+
+  // Bottom Navigation Component
+  const BottomNavigation = () => {
+    const navItems = [
+      { id: 'home', icon: <Mountain className="w-6 h-6" />, label: 'Home', page: 2 },
+      { id: 'campaign', icon: <Swords className="w-6 h-6" />, label: 'Campaign', page: 9 },
+      { id: 'champions', icon: <User className="w-6 h-6" />, label: 'Champions', page: 3 },
+      { id: 'inventory', icon: <Backpack className="w-6 h-6" />, label: 'Inventory', page: 13 },
+      { id: 'guild', icon: <Users className="w-6 h-6" />, label: 'Guild', page: 10 },
+      { id: 'shop', icon: <ShoppingBag className="w-6 h-6" />, label: 'Shop', page: 12 },
+    ];
+
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-[60] bg-[#0a0a0c]/90 backdrop-blur-xl border-t border-white/5 px-2 pb-6 pt-2">
+        <div className="max-w-md mx-auto flex items-center justify-around">
+          {navItems.map((item) => {
+            const isActive = page === item.page;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setPage(item.page)}
+                className={`flex flex-col items-center gap-1 transition-all duration-300 ${
+                  isActive ? 'text-lime-400 scale-110' : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-lime-400/10 shadow-[0_0_15px_rgba(163,230,53,0.2)]' : ''}`}>
+                  {item.icon}
+                </div>
+                <span className="text-[8px] font-bold uppercase tracking-widest">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [newFriendNickname, setNewFriendNickname] = useState("");
   const [playerClan, setPlayerClan] = useState(() => localStorage.getItem("rpg_player_clan") || "Без клана");
@@ -1814,7 +1850,7 @@ export default function App() {
 
   const handleVictory = () => {
     let gainedXp = 0;
-    const isPackLeader = forestProgress === 3;
+    let isPackLeader = forestProgress === 3;
     
     if (isPackLeader) {
        const targetLevel = Math.floor(Math.random() * 2) + 5; // 5, 6
@@ -1905,7 +1941,7 @@ export default function App() {
       };
     };
 
-    const finalDrops: Item[] = [];
+    let finalDrops: Item[] = [];
     // Only novice items drop now, 40% chance
     if (Math.random() < 0.40) {
       const noviceItems = [
@@ -1949,6 +1985,14 @@ export default function App() {
       ref={scrollContainerRef}
       className="min-h-[100dvh] overflow-x-hidden relative bg-transparent"
     >
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-[#0a0a0c]" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop')] opacity-[0.15] bg-cover bg-center mix-blend-overlay" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-lime-400/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-red-600/5 blur-[120px] rounded-full animate-pulse delay-700" />
+        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[100px] rounded-full animate-pulse delay-1000" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.05] mix-blend-overlay" />
+      </div>
       <Toaster theme="dark" position="top-center" />
       
       {authError === 'auth/admin-restricted-operation' && (
@@ -1973,55 +2017,66 @@ export default function App() {
         {page === 1 && (
           <motion.div
             key="page1"
-            className="flex flex-col items-center justify-center min-h-[100dvh] px-4 relative overflow-hidden bg-zinc-950"
+            className="flex flex-col items-center justify-center min-h-[100dvh] px-6 relative overflow-hidden bg-transparent"
             initial={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "-100vh" }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Mobile Game Engine Gradients */}
-            <div className="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-pulse" />
-            <div className="absolute bottom-[-10%] right-[-20%] w-[70vw] h-[70vw] bg-blue-600/30 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
-            <div className="absolute top-[30%] right-[10%] w-[50vw] h-[50vw] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[90px] animate-pulse" style={{ animationDelay: '1s' }} />
-
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="w-full max-w-md relative z-10 flex flex-col items-center"
             >
-              {/* Glowing Crown */}
+              {/* Geometric Logo */}
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 1, delay: 0.1 }}
-                className="relative mb-8"
+                className="mb-12"
               >
-                <div className="absolute inset-0 bg-purple-500 blur-3xl opacity-60 rounded-full" />
-                <Crown className="w-28 h-28 text-white relative z-10 drop-shadow-[0_0_25px_rgba(255,255,255,0.6)]" strokeWidth={1} />
+                <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="40" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M50 10 L50 90" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M10 50 L90 50" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M21.7 21.7 L78.3 78.3" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M21.7 78.3 L78.3 21.7" stroke="#FF6B9E" strokeWidth="3" />
+                  <path d="M50 10 L78.3 21.7 L90 50 L78.3 78.3 L50 90 L21.7 78.3 L10 50 L21.7 21.7 Z" stroke="#FF6B9E" strokeWidth="3" />
+                </svg>
               </motion.div>
 
               <motion.h1
-                className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 mb-4 text-center uppercase tracking-widest drop-shadow-2xl"
+                className="text-2xl font-bold text-white mb-4 text-center tracking-widest"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Nation of Light
-                <br />
-                <span className="text-2xl md:text-3xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">and Darkness</span>
+                WELCOME
               </motion.h1>
               
               <motion.p
-                className="text-zinc-300 text-center text-sm md:text-base mb-12 max-w-xs font-medium drop-shadow-md"
+                className="text-zinc-400 text-center text-sm mb-8 max-w-[280px] leading-relaxed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 0.4 }}
+              >
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+              </motion.p>
+
+              {/* Pagination Dots */}
+              <motion.div 
+                className="flex items-center gap-2 mb-16"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1, delay: 0.6 }}
               >
-                Enter the realm. Forge your destiny.
-              </motion.p>
+                <div className="w-2 h-2 rounded-full bg-white"></div>
+                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+                <div className="w-2 h-2 rounded-full bg-white/30"></div>
+              </motion.div>
 
               {!isLoggedIn ? (
-                <div className="w-full space-y-4">
+                <div className="w-full flex flex-col items-center gap-6">
                   <button
                     onClick={async () => {
                       try {
@@ -2060,18 +2115,19 @@ export default function App() {
                         toast.error("Ошибка авторизации Google: " + error.message);
                       }
                     }}
-                    className="relative w-full group"
+                    className="w-full py-4 rounded-full bg-white text-[#22263F] font-bold text-base hover:bg-zinc-200 transition-colors flex items-center justify-center gap-3 shadow-lg"
                   >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 rounded-2xl blur opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                    <div className="relative w-full py-4 px-4 rounded-2xl bg-zinc-900/90 border border-white/10 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
-                      <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                      </svg>
-                      Войти через Google
-                    </div>
+                    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Log In with Google
+                  </button>
+                  
+                  <button className="text-zinc-400 text-sm font-medium hover:text-white transition-colors">
+                    Register
                   </button>
                 </div>
               ) : (
@@ -2079,12 +2135,9 @@ export default function App() {
                   onClick={() => {
                     setPage(2);
                   }}
-                  className="relative w-full group"
+                  className="w-full py-4 rounded-full bg-white text-[#22263F] font-bold text-base hover:bg-zinc-200 transition-colors shadow-lg mt-8"
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-2xl blur opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                  <div className="relative w-full py-4 px-4 rounded-2xl bg-zinc-900/90 border border-white/10 text-white font-black text-lg flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all uppercase tracking-widest shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
-                    В игру
-                  </div>
+                  Продолжить игру
                 </button>
               )}
             </motion.div>
@@ -2825,55 +2878,94 @@ export default function App() {
         {page === 2 && (
           <motion.div
             key="page2"
-            className="min-h-[100dvh] flex flex-col items-center p-4 pb-24 text-zinc-100 relative"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
-            {/* Character Info Bar */}
-            <div className="w-full max-w-md flex items-center justify-between mb-6 px-2 mt-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl glass-card border border-white/10 flex items-center justify-center overflow-hidden">
+            {/* Header / Profile Bar */}
+            <div className="flex items-center justify-between mb-8 mt-4">
+              <div className="flex items-center gap-4">
+                <div className="relative group cursor-pointer" onClick={() => setPage(16)}>
+                  <div className="w-14 h-14 rounded-2xl bg-lime-400/10 border-2 border-lime-400/30 p-1 transition-all group-hover:scale-105 group-hover:border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.1)]">
                     <img 
                       src={avatarUrl || (playerGender === 'male' 
                         ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
                         : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
                       }
                       alt="Avatar" 
-                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
+                      className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'}`}
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
-                    <span className="text-[8px] font-bold text-lime-400">{currentLevel}</span>
+                  <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-lg bg-lime-400 text-lime-950 text-[10px] font-black shadow-lg">
+                    {currentLevel}
                   </div>
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-black tracking-tight text-white">{playerName}</span>
-                    {isCreator && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">{playerName}</h2>
+                    {isCreator && <ShieldCheck className="w-4 h-4 text-amber-400" />}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Онлайн</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.5)]" />
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Online</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setPage(29)}
-                  className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors relative"
+                  className="p-3 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-all relative"
                 >
                   <Users className="w-5 h-5" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
-                    <span className="text-[8px] font-bold text-white">{onlineUsers.size}</span>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-lime-400 text-lime-950 text-[8px] font-black flex items-center justify-center">
+                    {onlineUsers.size}
                   </div>
                 </button>
-                <LocationPlayers location="Город" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
-                <button onClick={() => setPage(11)} className="p-2.5 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                <button onClick={() => setPage(11)} className="p-3 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-all">
                   <Settings className="w-5 h-5" />
                 </button>
+              </div>
+            </div>
+
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
+                    <Heart className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-black text-white">{playerHealth}%</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Health</span>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full mt-2 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${playerHealth}%` }}
+                      className="h-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 rounded-3xl bg-white/5 border border-white/5 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-lime-400/10 text-lime-400">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-black text-white">{xpPercentage}%</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Experience</span>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full mt-2 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${xpPercentage}%` }}
+                      className="h-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.3)]"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3062,690 +3154,114 @@ export default function App() {
         {page === 3 && (
           <motion.div
             key="page3"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Header */}
-            <div className="flex items-center mb-8 relative mt-4">
-              <button 
-                onClick={() => setPage(2)} 
-                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center">Экипировка</h2>
-            </div>
-
-            {/* Character & Slots */}
-            <div className="mt-4 grid gap-2 md:gap-4 items-center" style={{ gridTemplateColumns: '1fr 200px 1fr' }}>
-              {/* Left Column */}
-              <div className="flex flex-col justify-between h-[450px]">
-                <EquipSlot label="Шлем" item={equippedItems["Шлем"]} onUnequip={() => unequipItem("Шлем")} />
-                <EquipSlot label="Наручи" item={equippedItems["Наручи"]} onUnequip={() => unequipItem("Наручи")} />
-                <EquipSlot label="Меч" item={equippedItems["Меч"]} onUnequip={() => unequipItem("Меч")} />
-                <EquipSlot label="Штаны" item={equippedItems["Штаны"]} onUnequip={() => unequipItem("Штаны")} />
-                <EquipSlot label="Сапоги" item={equippedItems["Сапоги"]} onUnequip={() => unequipItem("Сапоги")} />
-              </div>
-
-              {/* Center Silhouette */}
-              <div 
-                className="relative flex items-center justify-center overflow-hidden mx-auto" 
-                style={{ 
-                  width: '200px',
-                  height: '450px', 
-                  borderRadius: '24px',
-                  background: 'linear-gradient(180deg, rgba(20,20,35,0.95) 0%, rgba(10,10,18,0.98) 100%)',
-                  border: '1px solid rgba(120,120,255,0.25)',
-                  boxShadow: '0 0 20px rgba(0,180,255,0.18), 0 0 40px rgba(120,0,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05)'
-                }}
-              >
-                {/* Inner Blur & Background Glow */}
-                <div className="absolute inset-0 backdrop-blur-sm rounded-[24px]" />
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 via-transparent to-purple-500/10 rounded-[24px]" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-blue-500/20 blur-[40px] rounded-full" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/4 bg-purple-500/20 blur-[40px] rounded-full" />
-
-                {/* Header: "ГЕРОЙ" */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-blue-300/80 font-black drop-shadow-[0_0_8px_rgba(0,180,255,0.8)]">
-                    ГЕРОЙ
-                  </span>
-                </div>
-
-                {/* Nickname above Avatar */}
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                  <span className="text-xs uppercase tracking-[0.1em] text-white font-bold drop-shadow-md">
-                    {playerName}
-                  </span>
-                </div>
-
-                {/* Avatar / Silhouette */}
-                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
-                  <img 
-                    src={avatarUrl || (playerGender === 'male' 
-                      ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                      : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
-                    }
-                    alt=""
-                    className={`w-full h-full object-contain brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[3] hue-rotate-[180deg] opacity-60' : 'sepia-[1] saturate-[3] hue-rotate-[300deg] opacity-60'} filter drop-shadow-[0_0_15px_rgba(120,120,255,0.4)] transition-all duration-700`}
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.parentElement?.parentElement?.querySelector('.fallback-silhouette');
-                      if (fallback) fallback.classList.remove('hidden');
-                    }}
+            {/* Champion Overview Header */}
+            <div className="flex flex-col gap-1 mb-6">
+              <h1 className="text-3xl font-black tracking-tighter uppercase text-white">Champion Overview</h1>
+              <div className="flex items-center gap-2">
+                <div className="px-2 py-0.5 bg-lime-400 text-lime-950 text-[10px] font-black rounded uppercase">Level {currentLevel}</div>
+                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${xpPercentage}%` }}
+                    className="h-full bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.5)]"
                   />
                 </div>
-                
-                {/* Fallback Silhouette */}
-                <div className="fallback-silhouette hidden absolute inset-0 flex items-center justify-center z-10">
-                  {playerGender === 'male' ? <Swords className="w-32 h-32 text-blue-400/50 filter drop-shadow-[0_0_10px_rgba(0,180,255,0.5)]" /> : <User className="w-32 h-32 text-purple-400/50 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]" />}
+                <span className="text-[10px] font-bold text-zinc-500">{xpPercentage}%</span>
+              </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="flex-1 grid grid-cols-12 gap-4">
+              {/* Left: Character Preview */}
+              <div className="col-span-7 relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-lime-400/5 to-transparent rounded-3xl border border-white/5 overflow-hidden">
+                  {/* Background decorative elements */}
+                  <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-32 h-32 bg-lime-400/10 blur-[60px] rounded-full" />
+                  
+                  {/* Character Image */}
+                  <div className="absolute inset-0 flex items-center justify-center p-4">
+                    <motion.img 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      src={avatarUrl || (playerGender === 'male' 
+                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
+                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
+                      }
+                      alt="Champion"
+                      className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(163,230,53,0.3)]"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+
+                  {/* Character Name Overlay */}
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight drop-shadow-md">{playerName}</h2>
+                    <p className="text-[10px] text-lime-400 font-bold uppercase tracking-widest">{playerRace}</p>
+                  </div>
                 </div>
-                
-                {/* Decorative Bottom Light */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-blue-900/40 to-transparent pointer-events-none z-10" />
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-blue-400/50 blur-[2px] rounded-t-full z-20" />
-                
-                {/* Energy Particles (CSS simulated) */}
-                <div className="absolute inset-0 opacity-50 pointer-events-none z-10">
-                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-blue-300 rounded-full animate-ping shadow-[0_0_5px_#93c5fd]" />
-                  <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-purple-300 rounded-full animate-ping delay-300 shadow-[0_0_5px_#d8b4fe]" />
-                  <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-ping delay-700 shadow-[0_0_5px_#ffffff]" />
-                </div>
-                
-                {/* Overlay icons for equipped items */}
-                <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 p-4 opacity-40 pointer-events-none z-10">
-                  {(Object.values(equippedItems) as (Item | null)[]).map((item, i) => {
-                    if (!item) return <div key={i} />;
-                    const name = item.name.toLowerCase();
-                    return (
-                      <div key={i} className="flex items-center justify-center">
-                        {name.includes("меч") && <Swords className="w-4 h-4 text-blue-300" />}
-                        {name.includes("щит") && <Shield className="w-4 h-4 text-blue-300" />}
-                        {name.includes("лук") && <Wind className="w-4 h-4 text-blue-300" />}
-                        {name.includes("топор") && <Gavel className="w-4 h-4 text-blue-300" />}
-                        {name.includes("посох") && <Star className="w-4 h-4 text-blue-300" />}
-                        {name.includes("рубашка") && <User className="w-4 h-4 text-blue-300" />}
+              </div>
+
+              {/* Right: Stats & Info */}
+              <div className="col-span-5 flex flex-col gap-3">
+                {/* Stats List */}
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'Strength', value: totalStrength, icon: <Swords className="w-4 h-4" />, color: 'text-red-400', bg: 'bg-red-400/10' },
+                    { label: 'Agility', value: totalAgility, icon: <Zap className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                    { label: 'Intuition', value: totalIntuition, icon: <Target className="w-4 h-4" />, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+                    { label: 'Endurance', value: totalEndurance, icon: <Shield className="w-4 h-4" />, color: 'text-green-400', bg: 'bg-green-400/10' },
+                    { label: 'Wisdom', value: totalWisdom, icon: <TrendingUp className="w-4 h-4" />, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex items-center justify-between p-2 bg-white/5 border border-white/5 rounded-2xl">
+                      <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
+                        {stat.icon}
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Clan Name below Avatar */}
-                {clanId && (
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full text-center z-20">
-                    <span className="text-[9px] uppercase tracking-widest text-purple-300 font-bold drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]">
-                      &lt;{clanId}&gt;
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column */}
-              <div className="flex flex-col justify-between h-[450px]">
-                <EquipSlot label="Ожерелье" item={equippedItems["Ожерелье"]} onUnequip={() => unequipItem("Ожерелье")} />
-                <EquipSlot label="Перчатки" item={equippedItems["Перчатки"]} onUnequip={() => unequipItem("Перчатки")} />
-                <EquipSlot label="Второе оружие" item={equippedItems["Второе оружие"]} onUnequip={() => unequipItem("Второе оружие")} />
-                <EquipSlot label="Рубашка" item={equippedItems["Рубашка"]} onUnequip={() => unequipItem("Рубашка")} />
-                <EquipSlot label="Пояс" item={equippedItems["Пояс"]} onUnequip={() => unequipItem("Пояс")} />
-              </div>
-            </div>
-
-            {/* Character Info Block */}
-            <div className="mt-6 glass-card/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 flex flex-col gap-4 shadow-xl">
-              {/* Header: Name & Role */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
-                    {realName || "Алексей"}
-                  </h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-300 border border-lime-400/30">
-                    {clanRole || "Новичок"}
-                  </span>
-                </div>
-
-                {/* Online Status Indicator */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5">
-                  <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${isOnline ? 'text-green-400' : 'text-zinc-500'}`}>
-                    {isOnline ? "В сети" : (
-                      (() => {
-                        const now = new Date();
-                        const diff = now.getTime() - lastSeen.getTime();
-                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                        if (days >= 10) return "Был давно";
-                        if (days >= 1) return "Был недавно";
-                        const hours = lastSeen.getHours().toString().padStart(2, '0');
-                        const minutes = lastSeen.getMinutes().toString().padStart(2, '0');
-                        return `Был в ${hours}:${minutes}`;
-                      })()
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Clan & Level Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/40 rounded-2xl p-3 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Клан</span>
-                  {clanName ? (
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-lime-300 flex items-center gap-1">
-                        <Shield className="w-3 h-3" /> {clanName}
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-medium">5 Уровень</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-medium text-zinc-400 italic text-[11px]">не состоит в клане</span>
-                  )}
-                </div>
-
-                <div className="bg-black/40 rounded-2xl p-3 border border-white/5 flex flex-col gap-1">
-                  <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Прогресс</span>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black text-white uppercase tracking-tighter">
-                      Уровень {currentLevel || 3}
-                    </span>
-                    <div className="w-full h-1 bg-zinc-900/80 rounded-full mt-1 overflow-hidden">
-                      <div 
-                        className="h-full bg-lime-400" 
-                        style={{ width: `${xpPercentage}%` }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Race & Badges */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 text-zinc-200">
-                  {playerRace === "Эльф" ? <Wind className="w-4 h-4 text-green-400" /> :
-                   playerRace === "Орк" ? <Swords className="w-4 h-4 text-red-400" /> :
-                   playerRace === "Гном" ? <Mountain className="w-4 h-4 text-lime-600" /> :
-                   playerRace === "Нежить" ? <Snowflake className="w-4 h-4 text-blue-300" /> :
-                   <User className="w-4 h-4 text-lime-300" />}
-                  <span className="text-xs font-bold uppercase tracking-widest">
-                    {playerRace || "Человек"}
-                  </span>
-                </div>
-
-                {playerBadges.includes('admin') && (
-                  <div className="p-1.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400">
-                    <Crown className="w-4 h-4" />
-                  </div>
-                )}
-                {isCreator && (
-                  <div className="p-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1 px-2">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Создатель</span>
-                  </div>
-                )}
-                {playerBadges.includes('verified') && (
-                  <div className="p-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Identity Grid - Compact & Stylish */}
-            <div className="flex justify-between items-center gap-1 mt-4 bg-white/5 border border-white/5 rounded-2xl p-2 w-full">
-              <div className="flex-1 flex items-center gap-2 pl-1">
-                <div className={`w-7 h-7 rounded-lg ${playerGender === 'male' ? 'bg-blue-500/10' : 'bg-pink-500/10'} flex items-center justify-center shrink-0`}>
-                  {playerGender === 'male' ? <Mars className="w-3.5 h-3.5 text-blue-400" /> : <Venus className="w-3.5 h-3.5 text-pink-400" />}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Пол</span>
-                  <span className={`text-[10px] font-bold truncate ${playerGender === 'male' ? 'text-blue-300' : 'text-pink-300'}`}>
-                    {playerGender === 'male' ? 'Мужской' : 'Женский'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="w-px h-6 bg-white/10 shrink-0" />
-              
-              <div className="flex-1 flex items-center gap-2 px-1">
-                <div className="w-7 h-7 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-3.5 h-3.5 text-zinc-400" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Возраст</span>
-                  <span className="text-[10px] font-bold text-zinc-200 truncate">{playerAge} лет</span>
-                </div>
-              </div>
-              
-              <div className="w-px h-6 bg-white/10 shrink-0" />
-              
-              <div className="flex-1 flex items-center gap-2 pr-1">
-                <div className="w-7 h-7 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold leading-none mb-0.5">Страна</span>
-                  <span className="text-[10px] font-bold text-zinc-200 truncate">{isCountryHidden ? "••••••••" : country}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Attributes */}
-            <div className={`mt-4 bg-white/5 border ${isStatsExpanded ? 'border-lime-400/20' : 'border-white/5'} rounded-2xl p-3 w-full overflow-hidden transition-all duration-300`}>
-              <button 
-                onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-                className="flex justify-between items-center w-full group"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-1 h-4 ${isStatsExpanded ? 'bg-lime-400' : 'bg-zinc-600'} rounded-full transition-colors`} />
-                  <h4 className={`text-[10px] uppercase tracking-widest ${isStatsExpanded ? 'text-lime-300' : 'text-zinc-500'} font-bold group-hover:text-lime-300 transition-colors`}>Характеристики</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">
-                    {isStatsExpanded ? "Свернуть" : "Развернуть"}
-                  </span>
-                  <ChevronRight className={`w-3 h-3 text-zinc-500 transition-transform duration-300 ${isStatsExpanded ? 'rotate-90' : ''}`} />
-                </div>
-              </button>
-              
-              <AnimatePresence>
-                {isStatsExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-3 pt-4">
-                      {unspentStatPoints > 0 && (
-                        <div className="mb-4 p-2 bg-lime-400/10 border border-lime-400/20 rounded-lg text-center">
-                          <span className="text-[10px] uppercase tracking-widest text-lime-300 font-black animate-pulse">
-                            Свободных очков: {unspentStatPoints}
-                          </span>
-                        </div>
-                      )}
-                      {[
-                        { label: "Сила", base: 10 + spentStrength, gear: gearBonuses.strength, elixir: elixirBonuses.strength, setter: setSpentStrength, spent: spentStrength, key: 'strength', color: 'text-red-400' },
-                        { label: "Ловкость", base: 10 + spentAgility, gear: gearBonuses.agility, elixir: elixirBonuses.agility, setter: setSpentAgility, spent: spentAgility, key: 'agility', color: 'text-blue-400' },
-                        { label: "Интуиция", base: 10 + spentIntuition, gear: gearBonuses.intuition, elixir: elixirBonuses.intuition, setter: setSpentIntuition, spent: spentIntuition, key: 'intuition', color: 'text-purple-400' },
-                        { label: "Выносливость", base: 10 + spentEndurance, gear: gearBonuses.endurance, elixir: elixirBonuses.endurance, setter: setSpentEndurance, spent: spentEndurance, key: 'endurance', color: 'text-green-400' },
-                        { label: "Мудрость", base: 10 + spentWisdom, gear: gearBonuses.wisdom, elixir: elixirBonuses.wisdom, setter: setSpentWisdom, spent: spentWisdom, key: 'wisdom', color: 'text-cyan-400' },
-                      ].map((stat, idx) => {
-                        const pending = pendingStats[stat.key as keyof typeof pendingStats];
-                        const total = stat.base + pending + stat.gear + stat.elixir;
-                        return (
-                          <div key={idx} className="flex flex-col gap-1">
-                            <div className="flex justify-between items-center text-sm">
-                              <span className={`text-[10px] uppercase tracking-widest font-bold ${stat.color}`}>{stat.label}</span>
-                              <div className="flex items-center gap-3">
-                                <div className="font-mono flex items-center gap-1 text-[10px]">
-                                  <span className="text-zinc-400">{stat.base}</span>
-                                  {pending !== 0 && (
-                                    <span className={`${pending > 0 ? "text-lime-300" : "text-red-400"} font-bold`}>
-                                      {pending > 0 ? "+" : ""}{pending}
-                                    </span>
-                                  )}
-                                  <span className="text-zinc-600">+</span>
-                                  <span className="text-green-400">({stat.gear})</span>
-                                  <span className="text-zinc-600">+</span>
-                                  <span className="text-lime-300">({stat.elixir})</span>
-                                  <span className="text-zinc-600 mx-0.5">=</span>
-                                  <div className={`px-2 py-0.5 rounded bg-white/10 border border-white/5 flex items-center justify-center min-w-[28px]`}>
-                                    <span className="text-white font-black text-[12px] drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
-                                      {total}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  {pending > 0 && (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPendingStats(prev => ({ ...prev, [stat.key]: prev[stat.key as keyof typeof pendingStats] - 1 }));
-                                      }}
-                                      className="w-5 h-5 rounded bg-red-500/20 border border-red-500/50 flex items-center justify-center text-red-400 hover:bg-red-500/40 transition-colors"
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                  {unspentStatPoints > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setPendingStats(prev => ({ ...prev, [stat.key]: prev[stat.key as keyof typeof pendingStats] + 1 }));
-                                        }}
-                                        className="w-5 h-5 rounded bg-lime-400/20 border border-lime-400/50 flex items-center justify-center text-lime-300 hover:bg-lime-400/40 transition-colors"
-                                      >
-                                        <PlusCircle className="w-3 h-3" />
-                                      </button>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setPendingStats(prev => ({ ...prev, [stat.key]: prev[stat.key as keyof typeof pendingStats] + unspentStatPoints }));
-                                        }}
-                                        className="px-1.5 h-5 rounded bg-lime-400/20 border border-lime-400/50 flex items-center justify-center text-lime-300 hover:bg-lime-400/40 transition-colors text-[8px] font-black"
-                                      >
-                                        MAX
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${stat.color.replace('text-', 'bg-')} opacity-50 transition-all duration-500`} 
-                                style={{ width: `${Math.min(100, (total / 150) * 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Confirm Pending Stats */}
-                    {Object.values(pendingStats).some(v => v !== 0) && (
-                      <div className="mt-4 flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSpentStrength(prev => prev + pendingStats.strength);
-                            setSpentAgility(prev => prev + pendingStats.agility);
-                            setSpentIntuition(prev => prev + pendingStats.intuition);
-                            setSpentEndurance(prev => prev + pendingStats.endurance);
-                            setSpentWisdom(prev => prev + pendingStats.wisdom);
-                            setPendingStats({ strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 });
-                          }}
-                          className="flex-1 py-2 bg-green-500/20 border border-green-500/50 rounded-2xl text-green-400 text-[10px] font-bold uppercase tracking-widest hover:bg-green-500/30 transition-all flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle2 className="w-3 h-3" /> Подтвердить распределение
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPendingStats({ strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 });
-                          }}
-                          className="px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-400 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-all"
-                        >
-                          Отмена
-                        </button>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">{stat.label}</span>
+                        <span className="text-sm font-black text-white">{stat.value}</span>
                       </div>
-                    )}
+                    </div>
+                  ))}
+                </div>
 
-                    {/* Magical Properties */}
-                    {(totalManaCost > 0 || totalSpellPower > 0 || totalCooldownReduction > 0) && (
-                      <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
-                        <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Магические свойства</h4>
-                        {totalManaCost > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-blue-400">Расход маны</span>
-                            <span className="text-white font-mono">{totalManaCost}</span>
-                          </div>
-                        )}
-                        {totalSpellPower > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-purple-400">Сила заклинаний</span>
-                            <span className="text-white font-mono">+{totalSpellPower}</span>
-                          </div>
-                        )}
-                        {totalCooldownReduction > 0 && (
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-cyan-400">Перезарядка</span>
-                            <span className="text-white font-mono">-{totalCooldownReduction}%</span>
-                          </div>
+                {/* Equipment Summary */}
+                <div className="mt-2 p-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col gap-2">
+                  <h4 className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold">Equipment</h4>
+                  <div className="grid grid-cols-3 gap-1">
+                    {Object.entries(equippedItems).slice(0, 6).map(([slot, item], idx) => (
+                      <div key={idx} className="aspect-square rounded-lg bg-black/40 border border-white/5 flex items-center justify-center overflow-hidden">
+                        {item ? (
+                          <img src={(item as any).icon} className="w-full h-full object-contain p-1" alt="" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-white/5" />
                         )}
                       </div>
-                    )}
-
-                    {/* Reset Stats Button */}
-                    <div className="mt-6 pt-4 border-t border-white/5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          let costType: 'silver' | 'diamonds' = 'silver';
-                          let costAmount = 0;
-                          
-                          if (currentLevel < 15) {
-                            costType = 'silver';
-                            costAmount = 90000;
-                          } else if (currentLevel <= 40) {
-                            costType = 'diamonds';
-                            costAmount = 1000;
-                          } else {
-                            costType = 'diamonds';
-                            costAmount = 1000;
-                          }
-
-                          const hasEnough = costType === 'silver' ? silver >= costAmount : diamonds >= costAmount;
-                          
-                          if (hasEnough) {
-                            if (costType === 'silver') setSilver(prev => prev - costAmount);
-                            else setDiamonds(prev => prev - costAmount);
-                            
-                            setSpentStrength(0);
-                            setSpentAgility(0);
-                            setSpentIntuition(0);
-                            setSpentEndurance(0);
-                            setSpentWisdom(0);
-                          } else {
-                            console.log("Not enough currency to reset stats");
-                          }
-                        }}
-                        className="w-full py-2 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group"
-                      >
-                        <RotateCcw className="w-4 h-4 text-zinc-500 group-hover:text-lime-300 transition-colors" />
-                        <div className="flex flex-col items-start text-left">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-zinc-200 transition-colors">Сброс характеристик</span>
-                          <span className="text-[8px] text-zinc-600">
-                            {currentLevel < 15 ? "90,000 серебра" : "1,000 алмазов"}
-                          </span>
-                        </div>
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Indicators */}
-            <div className={`mt-4 bg-white/5 border ${isIndicatorsExpanded ? 'border-blue-500/20' : 'border-white/5'} rounded-2xl p-3 w-full overflow-hidden transition-all duration-300`}>
-              <button 
-                onClick={() => setIsIndicatorsExpanded(!isIndicatorsExpanded)}
-                className="flex justify-between items-center w-full group"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-1 h-4 ${isIndicatorsExpanded ? 'bg-blue-500' : 'bg-zinc-600'} rounded-full transition-colors`} />
-                  <h4 className={`text-[10px] uppercase tracking-widest ${isIndicatorsExpanded ? 'text-blue-400' : 'text-zinc-500'} font-bold group-hover:text-blue-300 transition-colors`}>Показатели</h4>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">
-                    {isIndicatorsExpanded ? "Свернуть" : "Развернуть"}
-                  </span>
-                  <ChevronRight className={`w-3 h-3 text-zinc-500 transition-transform duration-300 ${isIndicatorsExpanded ? 'rotate-90' : ''}`} />
-                </div>
-              </button>
-              
-              <AnimatePresence>
-                {isIndicatorsExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-4 pt-4">
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { label: "Урон", value: `${Math.floor((20 + currentLevel * 5) * (1 + (totalStrength - 10) * 0.15))} - ${Math.floor((40 + currentLevel * 5) * (1 + (totalStrength - 10) * 0.15))}`, icon: <Swords className="w-3 h-3" />, color: 'text-red-400' },
-                          { label: "Здоровье", value: maxPlayerHealth, icon: <Heart className="w-3 h-3" />, color: 'text-green-400' },
-                          { label: "Уворот", value: `${Math.min(95, Math.floor(65 * (1 + (totalAgility - 10) * 0.15)))}%`, icon: <Zap className="w-3 h-3" />, color: 'text-blue-400' },
-                          { label: "Блок", value: Math.floor(10 * (1 + (totalEndurance - 10) * 0.15)), icon: <Shield className="w-3 h-3" />, color: 'text-zinc-400' },
-                          { label: "Крит", value: `${Math.min(75, parseFloat((6.5 * (1 + (totalIntuition - 10) * 0.15)).toFixed(1)))}%`, icon: <Target className="w-3 h-3" />, color: 'text-lime-300' },
-                          { label: "Опыт", value: `+${Math.floor(10 * (1 + (totalWisdom - 10) * 0.15))}%`, icon: <TrendingUp className="w-3 h-3" />, color: 'text-cyan-400' },
-                        ].map((indicator, idx) => (
-                          <div key={idx} className="p-2 bg-black/20 rounded-lg border border-white/5 flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className={indicator.color}>{indicator.icon}</span>
-                              <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">{indicator.label}</span>
-                            </div>
-                            <span className="text-xs font-mono text-white font-bold">{indicator.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Full Inventory Integrated */}
-            <div className={`mt-4 bg-white/5 border ${isInventoryExpanded ? 'border-lime-400/20' : 'border-white/5'} rounded-2xl p-3 w-full overflow-hidden transition-all duration-300`}>
-              <button 
-                onClick={() => setIsInventoryExpanded(!isInventoryExpanded)}
-                className="flex justify-between items-center w-full group"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-1 h-4 ${isInventoryExpanded ? 'bg-lime-400' : 'bg-zinc-600'} rounded-full transition-colors`} />
-                  <h4 className={`text-[10px] uppercase tracking-widest ${isInventoryExpanded ? 'text-lime-300' : 'text-zinc-500'} font-bold group-hover:text-lime-300 transition-colors`}>Инвентарь</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold group-hover:text-zinc-300 transition-colors">
-                    {isInventoryExpanded ? "Скрыть" : "Показать"}
-                  </span>
-                  <ChevronRight className={`w-3 h-3 text-zinc-500 transition-transform duration-300 ${isInventoryExpanded ? 'rotate-90' : ''}`} />
-                </div>
-              </button>
-              
-              <AnimatePresence>
-                {isInventoryExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-4 flex flex-col gap-4">
-                      {/* Selected Item Card */}
-                      {selectedItemIdx !== null && (
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                          <div className={`w-16 h-16 rounded-lg bg-zinc-900 border flex items-center justify-center overflow-hidden shrink-0 ${
-                            ITEMS[selectedItemIdx].rarity === 'legendary' ? 'border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]' :
-                            ITEMS[selectedItemIdx].rarity === 'epic' ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
-                            ITEMS[selectedItemIdx].rarity === 'rare' ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
-                            'border-white/20'
-                          }`}>
-                            <img 
-                              src={ITEMS[selectedItemIdx].icon} 
-                              alt={`Item ${selectedItemIdx + 1}`}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <h3 className={`text-sm font-bold ${
-                              ITEMS[selectedItemIdx].rarity === 'legendary' ? 'text-orange-400' :
-                              ITEMS[selectedItemIdx].rarity === 'epic' ? 'text-purple-400' :
-                              ITEMS[selectedItemIdx].rarity === 'rare' ? 'text-blue-400' :
-                              'text-zinc-300'
-                            }`}>Предмет #{selectedItemIdx + 1}</h3>
-                            <p className="text-[10px] text-zinc-400 mt-1">ID: {ITEMS[selectedItemIdx].id}</p>
-                            <p className="text-[9px] uppercase tracking-widest mt-1 opacity-70">
-                              {ITEMS[selectedItemIdx].rarity === 'legendary' ? 'Легендарный' :
-                               ITEMS[selectedItemIdx].rarity === 'epic' ? 'Эпический' :
-                               ITEMS[selectedItemIdx].rarity === 'rare' ? 'Редкий' : 'Обычный'}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Grid */}
-                      <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                        {ITEMS.map((item, idx) => {
-                          const isSelected = selectedItemIdx === idx;
-                          
-                          const rarityColors = {
-                            common: "bg-zinc-900/80 border-white/10 hover:border-white/30",
-                            rare: "bg-blue-950/40 border-blue-500/30 hover:border-blue-500/50",
-                            epic: "bg-purple-950/40 border-purple-500/30 hover:border-purple-500/50",
-                            legendary: "bg-orange-950/40 border-orange-500/30 hover:border-orange-500/50"
-                          };
-                          
-                          const selectedColors = {
-                            common: "bg-zinc-800 border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10",
-                            rare: "bg-blue-900/40 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)] z-10",
-                            epic: "bg-purple-900/40 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)] z-10",
-                            legendary: "bg-orange-900/40 border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)] z-10"
-                          };
-
-                          return (
-                            <div key={item.id} className="relative aspect-square">
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setSelectedItemIdx(isSelected ? null : idx)}
-                                className={`w-full h-full rounded-xl border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
-                                  isSelected ? selectedColors[item.rarity] : rarityColors[item.rarity]
-                                }`}
-                              >
-                                <img 
-                                  src={item.icon} 
-                                  alt={`Item ${idx + 1}`}
-                                  className="w-3/4 h-3/4 object-contain"
-                                  loading="lazy"
-                                />
-                              </motion.button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 mb-12 space-y-2 w-full">
-              <motion.button 
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button 
                 onClick={() => setPage(16)}
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.95 }} 
-                className="w-full py-2 rounded-full  bg-white/5 border border-white/5 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                className="py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-[10px]"
               >
-                <ScrollText className="w-5 h-5" /> Анкета
-              </motion.button>
-              <motion.button 
-                onClick={() => setPage(7)}
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.95 }} 
-                className="w-full py-2 rounded-full  bg-white/5 border border-white/5 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-              >
-                <Mail className="w-5 h-5" /> Моя почта
-              </motion.button>
-              <motion.button 
+                <ScrollText className="w-4 h-4" /> Profile
+              </button>
+              <button 
                 onClick={() => setPage(11)}
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.95 }} 
-                className="w-full py-2 rounded-full  bg-white/5 border border-white/5 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                className="py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-[10px]"
               >
-                <Settings className="w-5 h-5" /> Настройки
-              </motion.button>
-              <motion.button 
-                onClick={() => setShowGlobalFeed(true)}
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.95 }} 
-                className="w-full py-2 rounded-full bg-lime-400/10 border border-lime-400/30 hover:bg-lime-400/20 transition-colors flex items-center justify-center gap-2 relative"
-              >
-                <Bell className="w-5 h-5 text-lime-400" /> 
-                <span className="text-lime-200">Глобальные события</span>
-                {hasNewEvents && (
-                  <span className="absolute top-2 right-4 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
-                )}
-              </motion.button>
+                <Settings className="w-4 h-4" /> Settings
+              </button>
             </div>
           </motion.div>
         )}
@@ -3936,77 +3452,69 @@ export default function App() {
         {page === 9 && (
           <motion.div
             key="page9"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Header */}
-            <div className="flex items-center mb-8 relative mt-4">
-              <button 
-                onClick={() => setPage(2)} 
-                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-lime-300">Сюжетные миссии</h2>
+            <div className="flex flex-col gap-1 mb-8 mt-4">
+              <h1 className="text-3xl font-black tracking-tighter uppercase text-white">Campaign</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Embark on epic story missions</p>
             </div>
 
-            <div className="flex-1 flex flex-col gap-2">
-              <p className="text-zinc-400 text-center mb-4">Выберите доступную главу сюжета:</p>
-              
+            <div className="flex-1 flex flex-col gap-4">
               <motion.button
                 onClick={() => setPage(6)}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.95 }}
-                className={`w-full py-5 px-3 rounded-2xl  border transition-all duration-300 flex items-center justify-between ${
+                whileTap={{ scale: 0.98 }}
+                className={`w-full p-6 rounded-3xl border transition-all duration-300 flex items-center justify-between group ${
                   forestProgress < 4
-                    ? "bg-green-900/20 border-green-500/30 text-green-100 hover:bg-green-900/40 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
-                    : "glass-card border-white/5 text-zinc-500 opacity-70"
+                    ? "bg-lime-400/5 border-lime-400/20 text-white hover:bg-lime-400/10"
+                    : "bg-white/5 border-white/5 text-zinc-500 opacity-70"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <div className={`p-3 rounded-2xl ${forestProgress < 4 ? 'bg-green-500/20 text-green-400' : 'bg-zinc-900/80 text-zinc-600'}`}>
-                    <TreePine className="w-6 h-6" />
+                <div className="flex items-center gap-4">
+                  <div className={`p-4 rounded-2xl transition-all ${forestProgress < 4 ? 'bg-lime-400/10 text-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.2)]' : 'bg-zinc-900/80 text-zinc-600'}`}>
+                    <TreePine className="w-8 h-8" />
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className="font-bold text-base">Темный Лес</span>
-                    <span className="text-[10px] uppercase tracking-widest opacity-60">
-                      {forestProgress < 4 ? "Глава 1: В процессе" : "Глава 1: Завершено"}
+                    <span className="font-black text-lg uppercase tracking-tight">Dark Forest</span>
+                    <span className="text-[10px] uppercase tracking-widest font-bold opacity-60">
+                      {forestProgress < 4 ? "Chapter 1: In Progress" : "Chapter 1: Completed"}
                     </span>
                   </div>
                 </div>
-                {forestProgress < 4 ? <ChevronRight className="w-5 h-5 text-green-500/50" /> : <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                {forestProgress < 4 ? <ChevronRight className="w-6 h-6 text-lime-400/50" /> : <CheckCircle2 className="w-6 h-6 text-lime-400" />}
               </motion.button>
 
               <motion.button
                 disabled={forestProgress < 4}
                 onClick={() => setPage(26)}
                 whileHover={forestProgress >= 4 ? { scale: 1.02 } : {}}
-                whileTap={forestProgress >= 4 ? { scale: 0.95 } : {}}
-                className={`w-full py-5 px-3 rounded-2xl  border transition-all duration-300 flex items-center justify-between ${
+                whileTap={forestProgress >= 4 ? { scale: 0.98 } : {}}
+                className={`w-full p-6 rounded-3xl border transition-all duration-300 flex items-center justify-between group ${
                   forestProgress >= 4
-                    ? "bg-zinc-900/80/40 border-zinc-400/30 text-zinc-200 hover:bg-zinc-700/40"
-                    : "bg-black/40 border-white/5 text-zinc-700 cursor-not-allowed"
+                    ? "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                    : "bg-black/20 border-white/5 text-zinc-700 cursor-not-allowed"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <div className={`p-3 rounded-2xl ${forestProgress >= 4 ? 'bg-zinc-700/40 text-zinc-300' : 'glass-card text-zinc-800'}`}>
-                    <Mountain className="w-6 h-6" />
+                <div className="flex items-center gap-4">
+                  <div className={`p-4 rounded-2xl transition-all ${forestProgress >= 4 ? 'bg-white/10 text-white' : 'bg-white/5 text-zinc-800'}`}>
+                    <Mountain className="w-8 h-8" />
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className="font-bold text-base">Поход в горы</span>
-                    <span className="text-[10px] uppercase tracking-widest opacity-60">
-                      {forestProgress >= 4 ? "Глава 2: Доступно" : "Глава 2: Заблокировано"}
+                    <span className="font-black text-lg uppercase tracking-tight">Mountain Trek</span>
+                    <span className="text-[10px] uppercase tracking-widest font-bold opacity-60">
+                      {forestProgress >= 4 ? "Chapter 2: Available" : "Chapter 2: Locked"}
                     </span>
                   </div>
                 </div>
-                {forestProgress >= 4 ? <ChevronRight className="w-5 h-5 text-zinc-500" /> : <Lock className="w-5 h-5 text-zinc-800" />}
+                {forestProgress >= 4 ? <ChevronRight className="w-6 h-6 text-zinc-500" /> : <Lock className="w-6 h-6 text-zinc-800" />}
               </motion.button>
 
-              <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                <p className="text-xs text-zinc-500 italic">Новые главы будут открываться по мере прохождения сюжета...</p>
+              <div className="mt-auto p-6 rounded-3xl bg-white/5 border border-white/5 text-center">
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">New chapters will be unlocked as you progress through the story...</p>
               </div>
             </div>
           </motion.div>
@@ -4016,99 +3524,93 @@ export default function App() {
         {page === 10 && (
           <motion.div
             key="page10"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Header */}
-            <div className="flex items-center mb-8 relative mt-4">
-              <button 
-                onClick={() => setPage(2)} 
-                className="absolute left-0 p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <h2 className="text-lg font-bold uppercase tracking-widest w-full text-center text-lime-300">Мой клан</h2>
+            <div className="flex flex-col gap-1 mb-8 mt-4">
+              <h1 className="text-3xl font-black tracking-tighter uppercase text-white">Guild</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Connect with your allies</p>
             </div>
 
             <div className="flex-1 flex flex-col gap-3">
               {clan ? (
                 <div className="flex flex-col h-full">
                   {/* Clan Tabs */}
-                  <div className="flex gap-2 mb-6">
+                  <div className="flex gap-2 mb-8">
                     <button 
                       onClick={() => setClanTab("info")}
-                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        clanTab === "info" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
+                      className={`flex-1 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        clanTab === "info" ? "bg-lime-400 text-lime-950 border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]" : "bg-white/5 border-white/5 text-zinc-500"
                       }`}
                     >
-                      Инфо
+                      Info
                     </button>
                     <button 
                       onClick={() => setClanTab("members")}
-                      className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                        clanTab === "members" ? "bg-lime-400/20 border-lime-400/50 text-lime-300" : "bg-white/5 border-white/5 text-zinc-500"
+                      className={`flex-1 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        clanTab === "members" ? "bg-lime-400 text-lime-950 border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]" : "bg-white/5 border-white/5 text-zinc-500"
                       }`}
                     >
-                      Участники
+                      Members
                     </button>
                     {(clan.leader === playerName) && (
                       <button 
                         onClick={() => setClanTab("manage")}
-                        className={`flex-1 py-2 rounded-2xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                          clanTab === "manage" ? "bg-red-500/20 border-red-500/50 text-red-400" : "bg-white/5 border-white/5 text-zinc-500"
+                        className={`flex-1 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                          clanTab === "manage" ? "bg-red-500 text-white border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]" : "bg-white/5 border-white/5 text-zinc-500"
                         }`}
                       >
-                        Управление
+                        Manage
                       </button>
                     )}
                   </div>
 
                   {clanTab === "info" && (
-                    <div className="bg-white/5  border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="w-20 h-20 rounded-full bg-lime-900/20 border-2 border-lime-400/30 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.1)] overflow-hidden">
+                    <div className="bg-white/5 border border-white/5 rounded-3xl p-8 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="w-24 h-24 rounded-3xl bg-lime-400/10 border-2 border-lime-400/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(163,230,53,0.1)] overflow-hidden">
                         {clan.avatarUrl ? (
                           <img src={clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <Shield className="w-10 h-10 text-lime-300" />
+                          <Shield className="w-12 h-12 text-lime-400" />
                         )}
                       </div>
-                      <h3 className="text-xl font-bold text-white mb-1">{clan.name}</h3>
-                      <div className="flex items-center gap-2 mb-6">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">{clan.name}</h3>
+                      <div className="flex items-center gap-2 mb-8">
+                        <span className={`text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${
                           clan.leader === playerName ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-zinc-500/10 border-zinc-500/30 text-zinc-400"
                         }`}>
-                          {clan.leader === playerName ? "Лидер" : "Участник"}
+                          {clan.leader === playerName ? "Leader" : "Member"}
                         </span>
                         {clan.settings?.isPrivate && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 text-blue-400 uppercase tracking-widest">Закрытый</span>
+                          <span className="text-[10px] font-black px-3 py-1 rounded-full border border-blue-500/30 text-blue-400 uppercase tracking-widest">Private</span>
                         )}
                       </div>
                       
-                      <div className="w-full grid grid-cols-2 gap-2 mb-6">
-                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Участники</div>
-                          <div className="text-base font-bold text-white">{clan.members?.length || 0} / 50</div>
+                      <div className="w-full grid grid-cols-2 gap-3 mb-8">
+                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
+                          <div className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Members</div>
+                          <div className="text-xl font-black text-white">{clan.members?.length || 0} / 50</div>
                         </div>
-                        <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Уровень</div>
-                          <div className="text-base font-bold text-white">{clan.level}</div>
+                        <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
+                          <div className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Level</div>
+                          <div className="text-xl font-black text-white">{clan.level}</div>
                         </div>
                       </div>
 
                       {!showClanLeaveConfirm ? (
                         <button 
                           onClick={() => setShowClanLeaveConfirm(true)}
-                          className="text-red-400 text-xs font-bold uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-2"
+                          className="text-red-400 text-[10px] font-black uppercase tracking-widest hover:text-red-300 transition-colors flex items-center gap-2"
                         >
-                          <LogOut className="w-3 h-3" /> Покинуть клан
+                          <LogOut className="w-4 h-4" /> Leave Guild
                         </button>
                       ) : (
-                        <div className="flex flex-col items-center gap-3">
-                          <p className="text-red-400 text-xs font-bold">Вы уверены?</p>
-                          <div className="flex gap-2">
+                        <div className="flex flex-col items-center gap-4">
+                          <p className="text-red-400 text-[10px] font-black uppercase tracking-widest">Are you sure?</p>
+                          <div className="flex gap-3">
                             <button 
                               onClick={async () => {
                                 try {
@@ -4130,13 +3632,13 @@ export default function App() {
                                   handleFirestoreError(error, OperationType.UPDATE, `clans/${clanId}`);
                                 }
                               }}
-                              className="px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-all"
+                              className="px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-all"
                             >
                               Да, покинуть
                             </button>
                             <button 
                               onClick={() => setShowClanLeaveConfirm(false)}
-                              className="px-3 py-2 bg-zinc-900/80 border border-white/5 rounded-lg text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all"
+                              className="px-4 py-2 bg-zinc-900/80 border border-white/5 rounded-xl text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-700 transition-all"
                             >
                               Отмена
                             </button>
@@ -4147,16 +3649,16 @@ export default function App() {
                   )}
 
                   {clanTab === "members" && (
-                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
                       {clan.members?.map((member: any, idx: number) => {
                         const mNickname = member.nickname || member;
                         const mRole = member.role || (mNickname === clan.leader ? "leader" : "member");
                         const isMeLeader = clan.leader === playerName;
                         
                         return (
-                          <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-zinc-900/80 flex items-center justify-center text-zinc-400 font-bold text-xs border border-white/5">
+                          <div key={idx} className="p-5 bg-white/5 border border-white/5 rounded-3xl flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-2xl bg-zinc-900/80 flex items-center justify-center text-zinc-400 font-bold text-sm border border-white/5">
                                 {mNickname[0]}
                               </div>
                               <div className="flex flex-col">
@@ -4169,9 +3671,9 @@ export default function App() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {mRole === 'leader' && <Crown className="w-4 h-4 text-red-400" />}
+                              {mRole === 'leader' && <Crown className="w-5 h-5 text-red-400" />}
                               {isMeLeader && mNickname !== playerName && (
-                                <div className="flex gap-1">
+                                <div className="flex gap-2">
                                   {mRole === 'member' && (
                                     <button 
                                       onClick={async () => {
@@ -4181,10 +3683,10 @@ export default function App() {
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
                                         toast.success(`${mNickname} назначен офицером`);
                                       }}
-                                      className="p-1.5 bg-lime-400/10 border border-lime-400/20 rounded text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
+                                      className="p-2 bg-lime-400/10 border border-lime-400/20 rounded-xl text-lime-400 hover:bg-lime-400 hover:text-lime-950 transition-all"
                                       title="Повысить до офицера"
                                     >
-                                      <TrendingUp className="w-3 h-3" />
+                                      <TrendingUp className="w-4 h-4" />
                                     </button>
                                   )}
                                   {mRole === 'officer' && (
@@ -4196,10 +3698,10 @@ export default function App() {
                                         await updateDoc(doc(db, "clans", clanId!), { members: newMembers });
                                         toast.info(`${mNickname} разжалован до участника`);
                                       }}
-                                      className="p-1.5 bg-zinc-900/80 border border-white/5 rounded text-zinc-400 hover:bg-zinc-700 transition-all"
+                                      className="p-2 bg-zinc-900/80 border border-white/5 rounded-xl text-zinc-400 hover:bg-zinc-700 transition-all"
                                       title="Разжаловать"
                                     >
-                                      <Minus className="w-3 h-3" />
+                                      <Minus className="w-4 h-4" />
                                     </button>
                                   )}
                                   <button 
@@ -4215,10 +3717,10 @@ export default function App() {
                                         toast.error(`${mNickname} исключен из клана`);
                                       }
                                     }}
-                                    className="p-1.5 bg-red-500/10 border border-red-500/20 rounded text-red-500 hover:bg-red-500 hover:text-red-950 transition-all"
+                                    className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 hover:bg-red-500 hover:text-red-950 transition-all"
                                     title="Исключить"
                                   >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-4 h-4" />
                                   </button>
                                 </div>
                               )}
@@ -4231,32 +3733,32 @@ export default function App() {
 
                   {clanTab === "manage" && (
                     <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-6">
                         <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
                           <Shield className="w-3 h-3" /> Герб клана
                         </h4>
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center overflow-hidden">
+                        <div className="flex items-center gap-6 mb-4">
+                          <div className="w-20 h-20 rounded-3xl bg-zinc-900/80 border border-white/5 flex items-center justify-center overflow-hidden">
                             {clanAvatarUrl || clan.avatarUrl ? (
                               <img src={clanAvatarUrl || clan.avatarUrl} alt="Crest" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <Shield className="w-8 h-8 text-zinc-600" />
+                              <Shield className="w-10 h-10 text-zinc-600" />
                             )}
                           </div>
-                          <div className="flex-1 space-y-2">
+                          <div className="flex-1 space-y-3">
                             <input 
                               type="text" 
                               placeholder="URL герба..."
                               value={clanAvatarUrl}
                               onChange={(e) => setClanAvatarUrl(e.target.value)}
-                              className="w-full bg-black/40 border border-white/5 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-lime-400/50 transition-colors"
+                              className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-lime-400/50 transition-colors"
                             />
                             <button 
                               onClick={async () => {
                                 await updateDoc(doc(db, "clans", clanId!), { avatarUrl: clanAvatarUrl });
                                 toast.success("Герб обновлен");
                               }}
-                              className="w-full py-1.5 bg-lime-400/20 border border-lime-400/50 rounded-lg text-lime-300 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400/30 transition-all"
+                              className="w-full py-2 bg-lime-400/20 border border-lime-400/50 rounded-xl text-lime-300 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400/30 transition-all"
                             >
                               Сохранить герб
                             </button>
@@ -4264,20 +3766,20 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-white/5 border border-white/5 rounded-3xl p-6">
                         <h4 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex items-center gap-2">
                           <Settings className="w-3 h-3" /> Настройки вступления
                         </h4>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-bold text-zinc-200">Минимальный уровень</p>
                               <p className="text-[10px] text-zinc-500">Порог для вступления</p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">-</button>
+                              <button onClick={() => setClanMinLevel(Math.max(1, clanMinLevel - 1))} className="p-2 bg-white/5 rounded-xl border border-white/5 text-zinc-400">-</button>
                               <span className="text-sm font-bold text-lime-300 w-6 text-center">{clanMinLevel}</span>
-                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="p-1 bg-white/5 rounded border border-white/5 text-zinc-400">+</button>
+                              <button onClick={() => setClanMinLevel(Math.min(85, clanMinLevel + 1))} className="p-2 bg-white/5 rounded-xl border border-white/5 text-zinc-400">+</button>
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
@@ -4287,9 +3789,9 @@ export default function App() {
                             </div>
                             <button 
                               onClick={() => setIsClanPrivate(!isClanPrivate)}
-                              className={`w-10 h-5 rounded-full relative transition-colors ${isClanPrivate ? 'bg-lime-400' : 'bg-zinc-900/80'}`}
+                              className={`w-12 h-6 rounded-full relative transition-colors ${isClanPrivate ? 'bg-lime-400' : 'bg-zinc-900/80'}`}
                             >
-                              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isClanPrivate ? 'left-6' : 'left-1'}`} />
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isClanPrivate ? 'left-7' : 'left-1'}`} />
                             </button>
                           </div>
                           <button 
@@ -4299,18 +3801,18 @@ export default function App() {
                               });
                               toast.success("Настройки сохранены");
                             }}
-                            className="w-full py-2 bg-lime-400 text-lime-950 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-lime-300 transition-all"
+                            className="w-full py-4 bg-lime-400 text-lime-950 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-lime-300 transition-all"
                           >
                             Применить настройки
                           </button>
                         </div>
                       </div>
 
-                      <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-4">
+                      <div className="bg-red-900/10 border border-red-500/20 rounded-3xl p-6">
                         <h4 className="text-[10px] uppercase tracking-widest text-red-400 font-bold mb-2 flex items-center gap-2">
                           <Ban className="w-3 h-3" /> Опасная зона
                         </h4>
-                        <p className="text-[10px] text-zinc-500 mb-4">Расформирование клана удалит все данные без возможности восстановления.</p>
+                        <p className="text-[10px] text-zinc-500 mb-6">Расформирование клана удалит все данные без возможности восстановления.</p>
                         <button 
                           onClick={async () => {
                             if (confirm("ВЫ УВЕРЕНЫ? Клан будет удален навсегда!")) {
@@ -4328,7 +3830,7 @@ export default function App() {
                               toast.error("Клан расформирован");
                             }
                           }}
-                          className="w-full py-2 border border-red-500/50 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                          className="w-full py-4 border border-red-500/50 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
                         >
                           Расформировать клан
                         </button>
@@ -4338,15 +3840,15 @@ export default function App() {
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-zinc-900/80 border border-white/5 flex items-center justify-center mb-4">
-                      <Users className="w-8 h-8 text-zinc-500" />
+                  <div className="bg-white/5 border border-white/5 rounded-3xl p-8 flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-3xl bg-zinc-900/80 border border-white/5 flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-zinc-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">Вы не состоите в клане</h3>
-                    <p className="text-zinc-400 text-sm">Вступайте в клан, чтобы участвовать в битвах и получать бонусы!</p>
+                    <h3 className="text-xl font-bold text-white mb-2">Вы не состоите в клане</h3>
+                    <p className="text-zinc-400 text-sm mb-6">Вступайте в клан, чтобы участвовать в битвах и получать бонусы!</p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-1 gap-3">
                     {isCreatingClan ? (
                       // ... (existing creation UI)
                       <div className="bg-white/5  border border-white/5 rounded-2xl p-3 flex flex-col gap-2">
@@ -4767,91 +4269,81 @@ export default function App() {
         {page === 12 && (
           <motion.div
             key="page12"
-            className="min-h-[100dvh] flex flex-col p-3 pb-24 text-zinc-100 w-full max-w-md mx-auto"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">🛒 Магазин</h2>
-                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Торговая лавка</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <LocationPlayers location="Магазин" userLocations={userLocations} currentUserId={auth.currentUser?.uid} />
-                <button 
-                  onClick={() => setPage(2)}
-                  className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5 rotate-180" />
-                </button>
-              </div>
+            <div className="flex flex-col gap-1 mb-6">
+              <h1 className="text-3xl font-black tracking-tighter uppercase text-white">Marketplace</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Upgrade your arsenal</p>
             </div>
 
             {/* Shop Tabs */}
-            <div className="flex gap-1 p-1 bg-black/40 rounded-3xl border border-white/5 mb-6 overflow-x-auto custom-scrollbar no-scrollbar">
+            <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar no-scrollbar">
               {[
-                { id: 'equipment', label: 'Снаряжение', icon: Swords },
-                { id: 'elixirs', label: 'Эликсиры', icon: FlaskConical },
-                { id: 'books', label: 'Книги', icon: BookOpen },
-                { id: 'chests', label: 'Сундуки', icon: Package },
-                { id: 'diamonds', label: 'Алмазы', icon: Gem },
+                { id: 'equipment', label: 'Gear', icon: Swords },
+                { id: 'elixirs', label: 'Elixirs', icon: FlaskConical },
+                { id: 'books', label: 'Books', icon: BookOpen },
+                { id: 'chests', label: 'Chests', icon: Package },
+                { id: 'diamonds', label: 'Gems', icon: Gem },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setShopTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border shrink-0 ${
                     shopTab === tab.id 
-                      ? 'bg-lime-400 text-lime-950 shadow-lg shadow-lime-400/20' 
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                      ? 'bg-lime-400 text-lime-950 border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]' 
+                      : 'bg-white/5 border-white/5 text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  <tab.icon className="w-3 h-3" />
+                  <tab.icon className="w-4 h-4" />
                   {tab.label}
                 </button>
               ))}
             </div>
 
             {/* Shop Content */}
-            <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3">
               {SHOP_ITEMS[shopTab].map((item) => (
-                <div 
+                <motion.div 
                   key={item.id}
-                  className="p-4 bg-white/5 border border-white/5 rounded-3xl flex items-center justify-between group hover:bg-white/10 transition-all"
+                  whileHover={{ scale: 1.01 }}
+                  className="p-4 bg-white/5 border border-white/5 rounded-3xl flex items-center justify-between group transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
-                      item.rarity === 'legendary' ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' :
-                      item.rarity === 'epic' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' :
-                      item.rarity === 'rare' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${
+                      item.rarity === 'legendary' ? 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.1)]' :
+                      item.rarity === 'epic' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.1)]' :
+                      item.rarity === 'rare' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]' :
                       'bg-zinc-900/80 border-white/5 text-zinc-400'
                     }`}>
                       {shopTab === 'equipment' && (
-                        item.type === 'Меч' ? <Swords className="w-6 h-6" /> :
-                        item.type === 'Рубашка' ? <User className="w-6 h-6" /> :
-                        item.type === 'Второе оружие' ? <Shield className="w-6 h-6" /> :
-                        <Package className="w-6 h-6" />
+                        item.type === 'Меч' ? <Swords className="w-7 h-7" /> :
+                        item.type === 'Рубашка' ? <User className="w-7 h-7" /> :
+                        item.type === 'Второе оружие' ? <Shield className="w-7 h-7" /> :
+                        <Package className="w-7 h-7" />
                       )}
-                      {shopTab === 'elixirs' && <FlaskConical className="w-6 h-6" />}
-                      {shopTab === 'books' && <BookOpen className="w-6 h-6" />}
-                      {shopTab === 'chests' && <Package className="w-6 h-6" />}
-                      {shopTab === 'diamonds' && <Gem className="w-6 h-6" />}
+                      {shopTab === 'elixirs' && <FlaskConical className="w-7 h-7" />}
+                      {shopTab === 'books' && <BookOpen className="w-7 h-7" />}
+                      {shopTab === 'chests' && <Package className="w-7 h-7" />}
+                      {shopTab === 'diamonds' && <Gem className="w-7 h-7" />}
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{item.name}</h4>
-                      <p className="text-[10px] text-zinc-500">
-                        {item.description || `${item.type} • Ур. ${item.level}`}
+                    <div className="flex flex-col">
+                      <h4 className="text-sm font-black text-white uppercase tracking-tight">{item.name}</h4>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                        {item.description || `${item.type} • Lvl ${item.level}`}
                       </p>
                     </div>
                   </div>
                   <button 
                     onClick={() => buyItem(item)}
-                    className="px-4 py-2 bg-lime-400/10 border border-lime-400/20 rounded-2xl text-lime-400 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400 hover:text-lime-950 transition-all flex items-center gap-2"
+                    className="px-4 py-2 bg-lime-400 text-lime-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-lime-300 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(163,230,53,0.2)]"
                   >
-                    {item.cost} {item.currency === 'silver' ? <Coins className="w-3 h-3" /> : item.currency === 'gold' ? <Trophy className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
+                    {item.cost.toLocaleString()} {item.currency === 'silver' ? <Coins className="w-4 h-4" /> : item.currency === 'gold' ? <Trophy className="w-4 h-4" /> : <Gem className="w-4 h-4" />}
                   </button>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -6474,83 +5966,50 @@ export default function App() {
             </div>
           </motion.div>
         )}
-        <AnimatePresence>
-          {showGlobalFeed && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col"
-            >
-              <div className="p-4 border-b border-white/5 flex justify-between items-center glass-card">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-lime-400" /> Глобальные события
-                </h2>
-                <button 
-                  onClick={() => {
-                    setShowGlobalFeed(false);
-                    setHasNewEvents(false);
-                  }}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  <X className="w-6 h-6 text-zinc-400" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {globalEvents.length === 0 ? (
-                  <div className="text-center py-20 text-zinc-500 italic">
-                    Событий пока нет...
-                  </div>
-                ) : (
-                  globalEvents.map((event, idx) => (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={`p-3 rounded-2xl border ${
-                        event.type === 'achievement' 
-                          ? 'bg-lime-400/10 border-lime-400/30' 
-                          : 'bg-white/5 border-white/5'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${
-                          event.type === 'achievement' ? 'text-lime-300' : 'text-zinc-500'
-                        }`}>
-                          {event.type === 'achievement' ? 'Достижение' : 'Действие'}
-                        </span>
-                        <span className="text-[10px] text-zinc-600">
-                          {new Date(event.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-zinc-200">{event.message}</p>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {page === 13 && (
+          <motion.div
+            key="page13"
+            className="min-h-[100dvh] flex flex-col p-4 pb-32 text-zinc-100 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <div className="flex flex-col gap-1 mb-6">
+              <h1 className="text-3xl font-black tracking-tighter uppercase text-white">Inventory</h1>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Manage your items and gear</p>
+            </div>
 
-        {activeDialogue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="parchment p-6 w-full max-w-sm space-y-4">
-              <h2 className="text-xl font-bold text-zinc-950 font-display border-b-2 border-zinc-900/20 pb-2">{activeDialogue.name}</h2>
-              <p className="text-zinc-800 text-sm leading-relaxed">{activeDialogue.text}</p>
-              <div className="space-y-2">
-                {activeDialogue.options.map((option, i) => (
-                  <button 
-                    key={i}
-                    onClick={option.action}
-                    className="w-full py-2 bg-zinc-900/10 border-2 border-zinc-900/20 text-zinc-950 text-sm hover:bg-zinc-900/20 transition-all font-bold"
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+              <div className="grid grid-cols-4 gap-3">
+                {inventory.map((item, idx) => (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`aspect-square rounded-2xl border flex items-center justify-center relative overflow-hidden transition-all duration-300 ${
+                      item.rarity === 'legendary' ? 'bg-orange-950/20 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]' :
+                      item.rarity === 'epic' ? 'bg-purple-950/20 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' :
+                      item.rarity === 'rare' ? 'bg-blue-950/20 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)]' :
+                      'bg-white/5 border-white/10'
+                    }`}
                   >
-                    {option.text}
-                  </button>
+                    <img src={(item as any).icon} className="w-3/4 h-3/4 object-contain" alt="" />
+                    <div className="absolute bottom-1 right-1 px-1 bg-black/60 rounded text-[8px] font-bold text-white">
+                      Lvl {item.level}
+                    </div>
+                  </motion.div>
+                ))}
+                {/* Empty slots */}
+                {Array.from({ length: Math.max(0, 20 - inventory.length) }).map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square rounded-2xl bg-white/5 border border-white/5 border-dashed" />
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
+
+        {isLoggedIn && page !== 1 && page !== 14 && <BottomNavigation />}
       </div>
   );
 }
