@@ -181,36 +181,26 @@ const getAgeSuffix = (age: number) => {
 
 const SHOP_ITEMS: Record<string, any[]> = {
   equipment: [
-    { id: 'wpn_1', name: 'Железный меч', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_2', name: 'Стальной меч', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_3', name: 'Короткий кинжал', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 1, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_4', name: 'Боевой топор', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_5', name: 'Копьё', level: 1, rarity: 'common', type: 'Меч', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_6', name: 'Ледяной меч', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_7', name: 'Огненный топор', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_8', name: 'Ядовитый кинжал', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_9', name: 'Молот войны', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_10', name: 'Катана', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_11', name: 'Теневой клинок', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_12', name: 'Меч молнии', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_13', name: 'Кровавый топор', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_14', name: 'Клинок ветра', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_15', name: 'Двуручный меч', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_16', name: 'Посох огня', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_17', name: 'Посох льда', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_18', name: 'Посох тьмы', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_19', name: 'Арбалет', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_20', name: 'Лук охотника', level: 5, rarity: 'uncommon', type: 'Меч', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 4, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_21', name: 'Лук теней', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_22', name: 'Лук света', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_23', name: 'Золотой меч', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_24', name: 'Клинок дракона', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_25', name: 'Демонический меч', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_26', name: 'Молот титана', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_27', name: 'Косa смерти', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_28', name: 'Кристальный меч', level: 10, rarity: 'rare', type: 'Меч', cost: 1000, currency: 'silver', bonusPercent: 10, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_29', name: 'Обсидиановый клинок', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 16, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
-    { id: 'wpn_30', name: 'Легендарный меч героя', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 30, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_1', name: 'Меч ученика', level: 1, rarity: 'common', type: 'Меч', cost: 50, currency: 'silver', bonusPercent: 1, stats: { strength: 1, agility: 1, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_001.png' },
+    { id: 'wpn_2', name: 'Меч стража', level: 3, rarity: 'common', type: 'Меч', cost: 150, currency: 'silver', bonusPercent: 2, stats: { strength: 3, agility: 2, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_002.png' },
+    { id: 'wpn_3', name: 'Меч гладиатора', level: 5, rarity: 'uncommon', type: 'Меч', cost: 400, currency: 'silver', bonusPercent: 5, stats: { strength: 5, agility: 3, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_003.png' },
+    { id: 'wpn_4', name: 'Эпический меч', level: 8, rarity: 'epic', type: 'Меч', cost: 800, currency: 'silver', bonusPercent: 8, stats: { strength: 8, agility: 4, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_004.png' },
+    { id: 'wpn_5', name: 'Легендарный меч', level: 10, rarity: 'legendary', type: 'Меч', cost: 1500, currency: 'silver', bonusPercent: 10, stats: { strength: 12, agility: 6, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_005.png' },
+    { id: 'wpn_6', name: 'Мифический меч', level: 15, rarity: 'legendary', type: 'Меч', cost: 2500, currency: 'silver', bonusPercent: 15, stats: { strength: 18, agility: 8, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_006.png' },
+    { id: 'wpn_7', name: 'Меч ангелов', level: 20, rarity: 'legendary', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 25, agility: 12, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_007.png' },
+    { id: 'wpn_8', name: 'Божественный меч', level: 25, rarity: 'legendary', type: 'Меч', cost: 10000, currency: 'silver', bonusPercent: 25, stats: { strength: 35, agility: 15, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_008.png' },
+    { id: 'wpn_9', name: 'Меч паладина', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 50, agility: 20, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_009.png' },
+    { id: 'wpn_10', name: 'Меч света и тьмы', level: 35, rarity: 'legendary', type: 'Меч', cost: 50000, currency: 'silver', bonusPercent: 35, stats: { strength: 75, agility: 30, intuition: 0, endurance: 0, wisdom: 0 }, iconUrl: '/assets/icons/item_010.png' },
+    { id: 'wpn_11', name: 'Ржавый топор', level: 1, rarity: 'common', type: 'Меч', cost: 50, currency: 'silver', bonusPercent: 1, stats: { strength: 2, agility: 0, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_12', name: 'Железный топор', level: 3, rarity: 'common', type: 'Меч', cost: 150, currency: 'silver', bonusPercent: 2, stats: { strength: 4, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_13', name: 'Боевой топор', level: 5, rarity: 'uncommon', type: 'Меч', cost: 400, currency: 'silver', bonusPercent: 5, stats: { strength: 7, agility: 1, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_14', name: 'Двусторонний топор', level: 8, rarity: 'uncommon', type: 'Меч', cost: 800, currency: 'silver', bonusPercent: 8, stats: { strength: 10, agility: 2, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_15', name: 'Ледяной топор', level: 10, rarity: 'rare', type: 'Меч', cost: 1500, currency: 'silver', bonusPercent: 10, stats: { strength: 15, agility: 3, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_16', name: 'Огненный топор', level: 15, rarity: 'rare', type: 'Меч', cost: 2500, currency: 'silver', bonusPercent: 15, stats: { strength: 22, agility: 4, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_17', name: 'Кровавый топор', level: 20, rarity: 'epic', type: 'Меч', cost: 5000, currency: 'silver', bonusPercent: 20, stats: { strength: 30, agility: 7, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_18', name: 'Топор палача', level: 25, rarity: 'epic', type: 'Меч', cost: 10000, currency: 'silver', bonusPercent: 25, stats: { strength: 42, agility: 8, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_19', name: 'Топор титана', level: 30, rarity: 'legendary', type: 'Меч', cost: 20000, currency: 'silver', bonusPercent: 30, stats: { strength: 60, agility: 10, intuition: 0, endurance: 0, wisdom: 0 } },
+    { id: 'wpn_20', name: 'Легендарный топор ярости', level: 35, rarity: 'legendary', type: 'Меч', cost: 50000, currency: 'silver', bonusPercent: 35, stats: { strength: 90, agility: 15, intuition: 0, endurance: 0, wisdom: 0 } },
     { id: 'arm_31', name: 'Тканевая рубашка', level: 1, rarity: 'common', type: 'Рубашка', cost: 100, currency: 'silver', bonusPercent: 1, stats: { strength: 0, agility: 0, intuition: 0, endurance: 3, wisdom: 0 } },
     { id: 'arm_32', name: 'Кожаная броня', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
     { id: 'arm_33', name: 'Кольчужный доспех', level: 5, rarity: 'uncommon', type: 'Рубашка', cost: 300, currency: 'silver', bonusPercent: 5, stats: { strength: 0, agility: 0, intuition: 0, endurance: 6, wisdom: 0 } },
@@ -416,6 +406,7 @@ export default function App() {
   });
 
   const [shopTab, setShopTab] = useState<"equipment" | "elixirs" | "books" | "chests" | "diamonds">("equipment");
+  const [shopEquipmentCategory, setShopEquipmentCategory] = useState<"all" | "swords" | "axes" | "armor">("all");
 
   useEffect(() => {
     localStorage.setItem("rpg_inventory_tab", inventoryTab);
@@ -4892,30 +4883,72 @@ export default function App() {
               ))}
             </div>
 
+            {shopTab === 'equipment' && (
+              <div className="flex gap-2 mb-6 overflow-x-auto custom-scrollbar no-scrollbar">
+                {[
+                  { id: 'all', label: 'Все' },
+                  { id: 'swords', label: 'Мечи' },
+                  { id: 'axes', label: 'Топоры' },
+                  { id: 'armor', label: 'Броня' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setShopEquipmentCategory(cat.id as any)}
+                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      shopEquipmentCategory === cat.id
+                        ? 'bg-white/20 text-white border border-white/10'
+                        : 'bg-white/5 text-zinc-400 border border-transparent hover:bg-white/10 hover:text-zinc-300'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Shop Content */}
             <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
-              {SHOP_ITEMS[shopTab].map((item) => (
+              {SHOP_ITEMS[shopTab].filter(item => {
+                if (shopTab !== 'equipment' || shopEquipmentCategory === 'all') return true;
+                const nameLower = item.name.toLowerCase();
+                if (shopEquipmentCategory === 'swords') {
+                  return nameLower.includes('меч') || nameLower.includes('клинок') || nameLower.includes('катана');
+                }
+                if (shopEquipmentCategory === 'axes') {
+                  return nameLower.includes('топор');
+                }
+                if (shopEquipmentCategory === 'armor') {
+                  return item.type === 'Рубашка' || item.type === 'Штаны' || item.type === 'Сапоги';
+                }
+                return true;
+              }).map((item) => (
                 <div 
                   key={item.id}
                   className="p-4 bg-white/5 border border-white/5 rounded-3xl flex items-center justify-between group hover:bg-white/10 transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border overflow-hidden ${
                       item.rarity === 'legendary' ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' :
                       item.rarity === 'epic' ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' :
                       item.rarity === 'rare' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
                       'bg-zinc-900/80 border-white/5 text-zinc-400'
                     }`}>
-                      {shopTab === 'equipment' && (
-                        item.type === 'Меч' ? <Swords className="w-6 h-6" /> :
-                        item.type === 'Рубашка' ? <User className="w-6 h-6" /> :
-                        item.type === 'Второе оружие' ? <Shield className="w-6 h-6" /> :
-                        <Package className="w-6 h-6" />
+                      {item.iconUrl ? (
+                        <img src={item.iconUrl} alt={item.name} className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <>
+                          {shopTab === 'equipment' && (
+                            item.type === 'Меч' ? <Swords className="w-6 h-6" /> :
+                            item.type === 'Рубашка' ? <User className="w-6 h-6" /> :
+                            item.type === 'Второе оружие' ? <Shield className="w-6 h-6" /> :
+                            <Package className="w-6 h-6" />
+                          )}
+                          {shopTab === 'elixirs' && <FlaskConical className="w-6 h-6" />}
+                          {shopTab === 'books' && <BookOpen className="w-6 h-6" />}
+                          {shopTab === 'chests' && <Package className="w-6 h-6" />}
+                          {shopTab === 'diamonds' && <Gem className="w-6 h-6" />}
+                        </>
                       )}
-                      {shopTab === 'elixirs' && <FlaskConical className="w-6 h-6" />}
-                      {shopTab === 'books' && <BookOpen className="w-6 h-6" />}
-                      {shopTab === 'chests' && <Package className="w-6 h-6" />}
-                      {shopTab === 'diamonds' && <Gem className="w-6 h-6" />}
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white">{item.name}</h4>
