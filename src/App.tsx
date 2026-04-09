@@ -1409,10 +1409,34 @@ export default function App() {
     wisdom: 0
   });
   const [adminResourceAmount, setAdminResourceAmount] = useState<number>(100);
-  const [messages, setMessages] = useState<{id: number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean}, claimed?: boolean}[]>(() => {
+  const [messages, setMessages] = useState<{id: number, text: string, read: boolean, date: string, claimable?: {iron?: number, silver?: number, gold?: number, diamonds?: number, givesKey?: boolean, givesChest?: boolean}, claimed?: boolean}[]>(() => {
     const saved = localStorage.getItem("rpg_messages");
     return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    if (isLoggedIn && isAuthReady) {
+      setMessages(prev => {
+        const bonusId = 999999;
+        if (!prev.some(m => m.id === bonusId)) {
+          const bonusMsg = {
+            id: bonusId,
+            text: "Глобальная компенсация! Администрация дарит вам 50000 серебра, 50000 золота и 50000 алмазов.",
+            read: false,
+            date: new Date().toLocaleTimeString(),
+            claimable: {
+              silver: 50000,
+              gold: 50000,
+              diamonds: 50000
+            },
+            claimed: false
+          };
+          return [bonusMsg, ...prev];
+        }
+        return prev;
+      });
+    }
+  }, [isLoggedIn, isAuthReady]);
   const [prevLevel, setPrevLevel] = useState(() => parseInt(localStorage.getItem("rpg_prev_level") || "1", 10) || 1);
 
   // Global announcements for level-ups and items
@@ -1509,7 +1533,8 @@ export default function App() {
           date: new Date().toLocaleTimeString(),
           claimable: {
             iron: 5000,
-            silver: 50000
+            silver: 50000,
+            givesChest: true
           },
           claimed: false
         };
@@ -3146,8 +3171,53 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
           >
+            {/* Top Bars */}
+            <div className="w-full flex flex-col gap-2 mb-6 mt-2">
+              {/* Health Bar */}
+              <div className="w-full bg-zinc-900/80 rounded-full h-3 border border-zinc-800 overflow-hidden relative">
+                <motion.div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-rose-600 to-rose-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(0, Math.min(100, (playerHealth / maxHealth) * 100))}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black tracking-widest text-white drop-shadow-md">
+                  {playerHealth} / {maxHealth} ЗДОРОВЬЕ
+                </div>
+              </div>
+              
+              {/* XP Bar */}
+              <div className="w-full bg-zinc-900/80 rounded-full h-3 border border-zinc-800 overflow-hidden relative">
+                <motion.div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-lime-600 to-lime-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${xpPercentage}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black tracking-widest text-white drop-shadow-md">
+                  {isMaxLevel ? "МАКС. УРОВЕНЬ" : `${Math.floor(xpIntoLevel)} / ${xpNeededForNext} ОПЫТ`}
+                </div>
+              </div>
+
+              {/* Currencies */}
+              <div className="flex items-center justify-between px-2 mt-1">
+                <div className="flex items-center gap-1.5">
+                  <Coins className="w-3 h-3 text-zinc-400" />
+                  <span className="text-[10px] font-bold text-zinc-300">{silver} <span className="text-zinc-500 font-medium">серебро</span></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Circle className="w-3 h-3 text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-300">{gold} <span className="text-amber-500/50 font-medium">золото</span></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Gem className="w-3 h-3 text-cyan-400" />
+                  <span className="text-[10px] font-bold text-cyan-300">{diamonds} <span className="text-cyan-500/50 font-medium">алмазы</span></span>
+                </div>
+              </div>
+            </div>
+
             {/* Header / Info Bar */}
-            <div className="w-full flex items-center justify-between mb-8 mt-4">
+            <div className="w-full flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                 <div className="relative group">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl group-hover:border-lime-500/50 transition-all duration-500">
@@ -3209,24 +3279,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Stats Grid */}
-            <div className="w-full grid grid-cols-3 gap-4 mb-10">
-              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-rose-500/30 transition-colors group">
-                <Heart className="w-5 h-5 text-rose-500 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xl font-display font-bold text-white">{playerHealth}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Здоровье</span>
-              </Card>
-              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-zinc-400/30 transition-colors group">
-                <Coins className="w-5 h-5 text-zinc-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xl font-display font-bold text-white">{silver}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Серебро</span>
-              </Card>
-              <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-cyan-400/30 transition-colors group">
-                <Gem className="w-5 h-5 text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xl font-display font-bold text-white">{gold}</span>
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Золото</span>
-              </Card>
-            </div>
+
 
             {/* Navigation Grid */}
             <div className="w-full flex flex-col gap-6">
@@ -4361,8 +4414,7 @@ export default function App() {
                             if (msg.claimable) {
                               if (msg.claimable.givesKey) {
                                 setHasGiftKey(true);
-                                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, claimed: true, read: true } : m));
-                              } else {
+                              } else if (msg.claimable.givesChest) {
                                 const chest: Item = {
                                   id: Math.random().toString(36).substr(2, 9),
                                   name: "Сундук с ресурсами",
@@ -4372,11 +4424,21 @@ export default function App() {
                                   bonusPercent: 0,
                                   stats: { strength: 0, agility: 0, intuition: 0, endurance: 0, wisdom: 0 },
                                   isChest: true,
-                                  chestRewards: msg.claimable
+                                  chestRewards: {
+                                    iron: msg.claimable.iron,
+                                    silver: msg.claimable.silver,
+                                    gold: msg.claimable.gold,
+                                    diamonds: msg.claimable.diamonds
+                                  }
                                 };
                                 setChestsInventory(prev => [...prev, chest]);
-                                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, claimed: true, read: true } : m));
+                              } else {
+                                if (msg.claimable.iron) setIron(prev => prev + msg.claimable!.iron!);
+                                if (msg.claimable.silver) setSilver(prev => prev + msg.claimable!.silver!);
+                                if (msg.claimable.gold) setGold(prev => prev + msg.claimable!.gold!);
+                                if (msg.claimable.diamonds) setDiamonds(prev => prev + msg.claimable!.diamonds!);
                               }
+                              setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, claimed: true, read: true } : m));
                             }
                           }}
                           className="w-full py-2 bg-lime-400/20 border border-lime-400/50 rounded-2xl text-lime-300 text-[10px] font-bold uppercase tracking-widest hover:bg-lime-400/30 transition-all flex items-center justify-center gap-2"
