@@ -3209,47 +3209,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Level Progress Circle */}
-            <div className="w-full flex justify-center mb-10">
-              <div className="relative w-56 h-56 flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="4" />
-                  <motion.circle 
-                    cx="50" cy="50" r="46" fill="none" 
-                    stroke="url(#premiumGradient)" 
-                    strokeWidth="4" 
-                    strokeLinecap="round"
-                    strokeDasharray="289"
-                    initial={{ strokeDashoffset: 289 }}
-                    animate={{ strokeDashoffset: 289 - (289 * (xpPercentage / 100)) }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                  />
-                  <defs>
-                    <linearGradient id="premiumGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#A3E635" />
-                      <stop offset="100%" stopColor="#10B981" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center mb-2 overflow-hidden shadow-2xl">
-                    <img 
-                      src={avatarUrl || (playerGender === 'male' 
-                        ? "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f18c-776e-9828-56965684617a" 
-                        : "https://storage.googleapis.com/test-media-genai-studio/antigravity-attachments/0195f001-f1b2-7216-9828-56965684617a")
-                      }
-                      alt="Avatar" 
-                      className={`w-full h-full object-cover brightness-0 invert ${playerGender === 'male' ? 'sepia-[1] saturate-[5] hue-rotate-[180deg]' : 'sepia-[1] saturate-[5] hue-rotate-[300deg]'} opacity-60`}
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                  <span className="text-4xl font-display tracking-tighter font-black text-white">{currentLevel}</span>
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black">Уровень</span>
-                </div>
-              </div>
-            </div>
-
             {/* Stats Grid */}
             <div className="w-full grid grid-cols-3 gap-4 mb-10">
               <Card className="bg-zinc-900/50 border-zinc-800 p-4 flex flex-col items-center justify-center text-center hover:border-rose-500/30 transition-colors group">
