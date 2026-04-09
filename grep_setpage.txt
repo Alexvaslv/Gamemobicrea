@@ -1,0 +1,71 @@
+329:    setPage(16);
+1118:    setPage(27);
+1165:        setPage(25); // PvP Battle Page
+1181:            setPage(25);
+1193:      setPage(2);
+1219:            setPage(22);
+1235:    setPage(27);
+1274:        setPage(24); // Squad Battle Page
+1288:            setPage(24);
+1299:      setPage(23);
+1306:    setPage(27);
+1345:        setPage(25); // Battle Royale Page (using PvP page for now)
+1359:            setPage(25);
+1370:      setPage(24);
+1814:    setPage(5);
+1920:                          setPage(2);
+1926:                          setPage(14); // Go to character creation
+1950:                    setPage(2);
+1976:                onClick={() => setPage(2)} 
+2262:                                setPage(2);
+2302:                  onClick={() => setPage(2)}
+2386:                  setPage(2);
+2394:                  setPage(26);
+2397:                  setPage(2);
+2502:                      setPage(1);
+2566:                    setPage(2);
+2588:              <button onClick={() => setPage(3)} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+2735:                  onClick={() => setPage(29)}
+2744:                <button id="settings-button" onClick={() => setPage(11)} className="p-2.5 bg-lime-400 text-lime-950 border border-lime-400/50 rounded-2xl hover:bg-lime-300 transition-colors shadow-lg shadow-lime-400/20">
+2827:                  onClick={() => setPage(18)}
+2834:                  onClick={() => setPage(19)}
+2841:                  onClick={() => setPage(20)}
+2848:                  onClick={() => setPage(21)}
+2857:                  onClick={() => setPage(10)}
+2868:                    onClick={() => setPage(22)}
+2876:                    onClick={() => setPage(23)}
+2884:                    onClick={() => setPage(24)}
+2894:                  onClick={() => setPage(9)}
+2904:                  <motion.button onClick={() => setPage(12)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="w-full py-3 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-bold text-zinc-300">
+2913:                <motion.button onClick={() => setPage(3)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} className="w-full py-4 rounded-2xl glass-card hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-bold text-zinc-300">
+2921:                    onClick={() => setPage(28)} 
+2944:                onClick={() => setPage(2)} 
+3654:                onClick={() => setPage(16)}
+3662:                onClick={() => setPage(7)}
+3670:                onClick={() => setPage(11)}
+3704:                onClick={() => setPage(9)} 
+3731:                        setPage(4);
+3789:                onClick={() => setPage(2)} 
+3866:              onClick={() => setPage(2)}
+3888:                onClick={() => setPage(2)} 
+3900:                onClick={() => setPage(6)}
+3925:                onClick={() => setPage(26)}
+3968:                onClick={() => setPage(2)} 
+4608:                onClick={() => setPage(2)}
+4681:                      setPage(1);
+4818:                  onClick={() => setPage(2)}
+4907:              <button onClick={() => setPage(2)} className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+5011:                onClick={() => setPage(2)}
+5102:              <button onClick={() => setPage(2)} className="p-2 -ml-2 text-zinc-400 hover:text-zinc-200 transition-colors">
+5210:              <button onClick={() => setPage(2)} className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+5254:              <button onClick={() => setPage(2)} className="p-2 bg-white/5 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+5300:              <button onClick={() => setPage(2)} className="absolute left-0 p-2 bg-white/5 rounded-full border border-white/5"><ChevronLeft className="w-6 h-6" /></button>
+5347:              <button onClick={() => setPage(2)} className="absolute left-0 p-2 bg-white/5 rounded-full border border-white/5"><ChevronLeft className="w-6 h-6" /></button>
+5387:              <button onClick={() => setPage(2)} className="absolute left-0 p-2 bg-white/5 rounded-full border border-white/5"><ChevronLeft className="w-6 h-6" /></button>
+5988:                    setPage(2);
+6011:                  setPage(22);
+6126:                onClick={() => setPage(2)} 
+6377:                onClick={() => setPage(9)} 
+6405:                        setPage(4);
+6461:                  setPage(22);
+6499:                  setPage(22);
